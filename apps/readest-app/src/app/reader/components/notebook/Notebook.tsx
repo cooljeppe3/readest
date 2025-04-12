@@ -1,35 +1,55 @@
 import clsx from 'clsx';
 import React, { useEffect } from 'react';
 
+// Import necessary stores and hooks from the application.
 import { useSettingsStore } from '@/store/settingsStore';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { useNotebookStore } from '@/store/notebookStore';
 import { useTranslation } from '@/hooks/useTranslation';
+
 import { useThemeStore } from '@/store/themeStore';
 import { useEnv } from '@/context/EnvContext';
 import { useDrag } from '@/hooks/useDrag';
+
+// Import utility functions and types.
 import { TextSelection } from '@/utils/sel';
 import { BookNote } from '@/types/book';
 import { uniqueId } from '@/utils/misc';
 import { eventDispatcher } from '@/utils/event';
 import { getBookDirFromLanguage } from '@/utils/book';
+
+// Import child components.
 import BooknoteItem from '../sidebar/BooknoteItem';
 import NotebookHeader from './Header';
 import NoteEditor from './NoteEditor';
 
+// Define constants for the minimum and maximum width of the notebook.
 const MIN_NOTEBOOK_WIDTH = 0.15;
 const MAX_NOTEBOOK_WIDTH = 0.45;
 
+// Define the main Notebook component.
 const Notebook: React.FC = ({}) => {
+  // Use custom hooks for translation, theme management, environment configuration, and managing various stores.
   const _ = useTranslation();
   const { updateAppTheme } = useThemeStore();
   const { envConfig, appService } = useEnv();
   const { settings } = useSettingsStore();
   const { sideBarBookKey } = useSidebarStore();
-  const { notebookWidth, isNotebookVisible, isNotebookPinned } = useNotebookStore();
+  const {
+    notebookWidth,
+    isNotebookVisible,
+    isNotebookPinned,
+    setNotebookWidth,
+    setNotebookVisible,
+    toggleNotebookPin,
+    setNotebookNewAnnotation,
+    setNotebookEditAnnotation,
+  } = useNotebookStore();
+
   const { notebookNewAnnotation, notebookEditAnnotation, setNotebookPin } = useNotebookStore();
+
   const { getBookData, getConfig, saveConfig, updateBooknotes } = useBookDataStore();
   const { getView, getViewSettings } = useReaderStore();
   const { setNotebookWidth, setNotebookVisible, toggleNotebookPin } = useNotebookStore();
@@ -43,6 +63,7 @@ const Notebook: React.FC = ({}) => {
     }
   };
 
+  // useEffect hook to update the application theme based on notebook visibility.
   useEffect(() => {
     if (isNotebookVisible) {
       updateAppTheme('base-200');
@@ -52,6 +73,7 @@ const Notebook: React.FC = ({}) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isNotebookVisible]);
 
+  // useEffect hook to initialize notebook settings and handle navigation events.
   useEffect(() => {
     setNotebookWidth(settings.globalReadSettings.notebookWidth);
     setNotebookPin(settings.globalReadSettings.isNotebookPinned);
@@ -64,24 +86,29 @@ const Notebook: React.FC = ({}) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Function to handle resizing the notebook.
   const handleNotebookResize = (newWidth: string) => {
     setNotebookWidth(newWidth);
     settings.globalReadSettings.notebookWidth = newWidth;
   };
 
+  // Function to handle toggling the pinned state of the notebook.
   const handleTogglePin = () => {
     toggleNotebookPin();
     settings.globalReadSettings.isNotebookPinned = !isNotebookPinned;
   };
 
+  // Function to handle clicks on the overlay to hide the notebook.
   const handleClickOverlay = (event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
     setNotebookVisible(false);
+    // Clear the new and edit annotation when the notebook is closed
     setNotebookNewAnnotation(null);
     setNotebookEditAnnotation(null);
   };
 
+  // Function to save a new note to the book.
   const handleSaveNote = (selection: TextSelection, note: string) => {
     if (!sideBarBookKey) return;
     const view = getView(sideBarBookKey);
@@ -108,6 +135,7 @@ const Notebook: React.FC = ({}) => {
     setNotebookNewAnnotation(null);
   };
 
+  // Function to edit an existing note or delete a note.
   const handleEditNote = (note: BookNote, isDelete: boolean) => {
     if (!sideBarBookKey) return;
     const config = getConfig(sideBarBookKey)!;
@@ -127,19 +155,24 @@ const Notebook: React.FC = ({}) => {
     setNotebookEditAnnotation(null);
   };
 
+  // Function to handle the movement of the drag bar for notebook resizing.
   const onDragMove = (data: { clientX: number }) => {
     const widthFraction = 1 - data.clientX / window.innerWidth;
     const newWidth = Math.max(MIN_NOTEBOOK_WIDTH, Math.min(MAX_NOTEBOOK_WIDTH, widthFraction));
     handleNotebookResize(`${Math.round(newWidth * 10000) / 100}%`);
   };
 
+  // Use the custom useDrag hook to handle the drag start event.
   const { handleDragStart } = useDrag(onDragMove);
 
+  // If there's no book key, return null.
   if (!sideBarBookKey) return null;
 
+  // Retrieve book data and view settings based on the sideBarBookKey.
   const bookData = getBookData(sideBarBookKey);
   const viewSettings = getViewSettings(sideBarBookKey);
   if (!bookData || !bookData.bookDoc) {
+    // If book data or book document is not available, return null.
     return null;
   }
   const { bookDoc } = bookData;
@@ -147,13 +180,17 @@ const Notebook: React.FC = ({}) => {
 
   const config = getConfig(sideBarBookKey);
   const { booknotes: allNotes = [] } = config || {};
+  // Filter and sort the notes for annotations.
   const annotationNotes = allNotes
     .filter((note) => note.type === 'annotation' && note.note && !note.deletedAt)
     .sort((a, b) => b.createdAt - a.createdAt);
+  // Filter and sort the notes for excerpts.
   const excerptNotes = allNotes
     .filter((note) => note.type === 'excerpt' && note.text && !note.deletedAt)
     .sort((a, b) => a.createdAt - b.createdAt);
 
+  // Return the JSX for the Notebook component if it's visible.
+  // Render the notebook container and its content.
   return isNotebookVisible ? (
     <>
       {!isNotebookPinned && (
@@ -175,11 +212,14 @@ const Notebook: React.FC = ({}) => {
           position: isNotebookPinned ? 'relative' : 'absolute',
         }}
       >
+        {/* Styles for responsiveness on smaller screens */}
         <style jsx>{`
           @media (max-width: 640px) {
             .notebook-container {
               width: 100%;
               min-width: 100%;
+              max-width: 100%;
+
             }
           }
         `}</style>
@@ -205,6 +245,7 @@ const Notebook: React.FC = ({}) => {
                   tabIndex={0}
                   className='collapse-arrow border-base-300 bg-base-100 collapse border'
                 >
+                  {/* Title of the excerpt */}
                   <div
                     className='collapse-title font-size-sm h-9 min-h-9 p-2 pe-8 font-medium'
                     style={
@@ -215,6 +256,7 @@ const Notebook: React.FC = ({}) => {
                     }
                   >
                     <p className='line-clamp-1'>{item.text || `Excerpt ${index + 1}`}</p>
+                    {/* Content of the excerpt */}
                   </div>
                   <div className='collapse-content font-size-xs select-text px-3 pb-0'>
                     <p className='hyphens-auto text-justify'>{item.text}</p>
@@ -231,11 +273,14 @@ const Notebook: React.FC = ({}) => {
               </li>
             ))}
           </ul>
+          {/* Display the "Notes" section header if there are new or existing annotation notes */}
           <div dir='ltr'>
             {(notebookNewAnnotation || annotationNotes.length > 0) && (
               <p className='content font-size-base pt-1'>{_('Notes')}</p>
             )}
           </div>
+
+          {/* If there is a new note or a note is being edited, render the NoteEditor component */}
           {(notebookNewAnnotation || notebookEditAnnotation) && (
             <NoteEditor onSave={handleSaveNote} onEdit={(item) => handleEditNote(item, false)} />
           )}

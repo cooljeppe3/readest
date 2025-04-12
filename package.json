@@ -1,18 +1,33 @@
 {
+  // The name of the root package in the monorepo.
   "name": "@readest/monorepo",
+  // Indicates that this is a private package and should not be published to a package registry.
   "private": true,
+  // The repository where the monorepo is hosted.
   "repository": "readest/readest",
+  // Scripts that can be run using `pnpm run <script-name>`.
   "scripts": {
+    // Placeholder test script, indicates that no tests are configured at the root level.
     "test": "echo \"Error: no test specified\" && exit 1",
+    // Command to run Tauri commands, filtering for the `@readest/readest-app` package.
+    // This ensures that Tauri commands are only executed within the Readest app.
     "tauri": "pnpm --filter @readest/readest-app tauri"
   },
+  // Development dependencies used for building and development of the monorepo.
   "devDependencies": {
+    // Shared TypeScript configuration for the monorepo.
     "@sindresorhus/tsconfig": "^6.0.0",
+    // Linter for enforcing code quality and style.
     "eslint": "^9",
+    // Configuration for integrating Prettier with ESLint.
     "eslint-config-prettier": "^9.1.0",
+    // Git hooks manager to automate tasks like linting and formatting.
     "husky": "^9.1.6",
+    // Code formatter for consistent code style.
     "prettier": "^3.3.3",
+    // Prettier plugin for sorting Tailwind CSS classes.
     "prettier-plugin-tailwindcss": "^0.6.8",
+    // Language for building the application.
     "typescript": "^5"
   }
 }

@@ -1,36 +1,54 @@
 import React, { useEffect, useState } from 'react';
+// Import icons for writing mode options
 import { MdOutlineAutoMode } from 'react-icons/md';
 import { MdOutlineTextRotationNone, MdTextRotateVertical } from 'react-icons/md';
 import { TbTextDirectionRtl } from 'react-icons/tb';
 
+// Import necessary context, stores, and hooks
 import { useEnv } from '@/context/EnvContext';
 import { useReaderStore } from '@/store/readerStore';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useTranslation } from '@/hooks/useTranslation';
+// Import utility functions for various purposes
 import { isCJKEnv } from '@/utils/misc';
 import { getStyles } from '@/utils/style';
 import { getMaxInlineSize } from '@/utils/config';
 import { getBookDirFromWritingMode, getBookLangCode } from '@/utils/book';
+// Import constants
 import { MIGHT_BE_RTL_LANGS } from '@/services/constants';
+// Import helper function for saving view settings
 import { saveViewSettings } from '../../utils/viewSettingsHelper';
+// Import the NumberInput component
 import NumberInput from './NumberInput';
 
+// Define the LayoutPanel component, which accepts a bookKey prop
 const LayoutPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
+  // Initialize translation hook
   const _ = useTranslation();
+  // Access environment configuration
   const { envConfig } = useEnv();
+  // Access reader store for managing view settings
   const { getView, getViewSettings, setViewSettings } = useReaderStore();
+  // Access book data store for managing book data
   const { getBookData } = useBookDataStore();
+  // Get the current view for the specified book
   const view = getView(bookKey);
+  // Retrieve book data for the current book
   const bookData = getBookData(bookKey)!;
+  // Get view settings for the current book
   const viewSettings = getViewSettings(bookKey)!;
 
+  // Initialize state variables with values from view settings
+  // These control various layout aspects of the reader view
   const [paragraphMargin, setParagraphMargin] = useState(viewSettings.paragraphMargin!);
   const [lineHeight, setLineHeight] = useState(viewSettings.lineHeight!);
   const [wordSpacing, setWordSpacing] = useState(viewSettings.wordSpacing!);
   const [letterSpacing, setLetterSpacing] = useState(viewSettings.letterSpacing!);
   const [textIndent, setTextIndent] = useState(viewSettings.textIndent!);
   const [fullJustification, setFullJustification] = useState(viewSettings.fullJustification!);
+  // hyphenation option
   const [hyphenation, setHyphenation] = useState(viewSettings.hyphenation!);
+  // margin
   const [marginPx, setMarginPx] = useState(viewSettings.marginPx!);
   const [gapPercent, setGapPercent] = useState(viewSettings.gapPercent!);
   const [maxColumnCount, setMaxColumnCount] = useState(viewSettings.maxColumnCount!);
@@ -41,10 +59,12 @@ const LayoutPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   const [isScrolledMode, setScrolledMode] = useState(viewSettings.scrolled!);
   const [doubleBorder, setDoubleBorder] = useState(viewSettings.doubleBorder!);
   const [borderColor, setBorderColor] = useState(viewSettings.borderColor!);
+  // show header and footer
   const [showHeader, setShowHeader] = useState(viewSettings.showHeader!);
   const [showFooter, setShowFooter] = useState(viewSettings.showFooter!);
 
   useEffect(() => {
+    // Save paragraphMargin to view settings
     saveViewSettings(envConfig, bookKey, 'paragraphMargin', paragraphMargin);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paragraphMargin]);
@@ -80,6 +100,7 @@ const LayoutPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   }, [hyphenation]);
 
   useEffect(() => {
+    // Save marginPx to view settings and update view renderer
     if (marginPx === viewSettings.marginPx) return;
     saveViewSettings(envConfig, bookKey, 'marginPx', marginPx, false, false);
     view?.renderer.setAttribute('margin', `${marginPx}px`);
@@ -87,6 +108,7 @@ const LayoutPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   }, [marginPx]);
 
   useEffect(() => {
+    // Save gapPercent to view settings and update view renderer
     if (gapPercent === viewSettings.gapPercent) return;
     saveViewSettings(envConfig, bookKey, 'gapPercent', gapPercent, false, false);
     view?.renderer.setAttribute('gap', `${gapPercent}%`);
@@ -97,6 +119,7 @@ const LayoutPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   }, [gapPercent]);
 
   useEffect(() => {
+    // Save maxColumnCount to view settings and update view renderer
     if (maxColumnCount === viewSettings.maxColumnCount) return;
     saveViewSettings(envConfig, bookKey, 'maxColumnCount', maxColumnCount, false, false);
     view?.renderer.setAttribute('max-column-count', maxColumnCount);
@@ -105,6 +128,7 @@ const LayoutPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   }, [maxColumnCount]);
 
   useEffect(() => {
+    // Save maxInlineSize to view settings and update view renderer
     if (maxInlineSize === viewSettings.maxInlineSize) return;
     saveViewSettings(envConfig, bookKey, 'maxInlineSize', maxInlineSize, false, false);
     view?.renderer.setAttribute('max-inline-size', `${getMaxInlineSize(viewSettings)}px`);
@@ -112,6 +136,7 @@ const LayoutPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   }, [maxInlineSize]);
 
   useEffect(() => {
+    // Save maxBlockSize to view settings and update view renderer
     if (maxBlockSize === viewSettings.maxBlockSize) return;
     saveViewSettings(envConfig, bookKey, 'maxBlockSize', maxBlockSize, false, false);
     view?.renderer.setAttribute('max-block-size', `${maxBlockSize}px`);
@@ -119,6 +144,7 @@ const LayoutPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   }, [maxBlockSize]);
 
   useEffect(() => {
+    // Save writingMode to view settings and update view renderer
     if (writingMode === viewSettings.writingMode) return;
     // global settings are not supported for writing mode
     const prevWritingMode = viewSettings.writingMode;
@@ -143,11 +169,13 @@ const LayoutPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   }, [writingMode]);
 
   useEffect(() => {
+    // Save overrideLayout to view settings
     saveViewSettings(envConfig, bookKey, 'overrideLayout', overrideLayout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [overrideLayout]);
 
   useEffect(() => {
+    // Save isScrolledMode to view settings and update view renderer
     if (isScrolledMode === viewSettings.scrolled) return;
     saveViewSettings(envConfig, bookKey, 'scrolled', isScrolledMode);
     getView(bookKey)?.renderer.setAttribute('flow', isScrolledMode ? 'scrolled' : 'paginated');
@@ -160,6 +188,7 @@ const LayoutPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   }, [isScrolledMode]);
 
   useEffect(() => {
+    // Save doubleBorder to view settings and adjust gapPercent if necessary
     if (doubleBorder === viewSettings.doubleBorder) return;
     if (doubleBorder && viewSettings.vertical) {
       viewSettings.gapPercent = Math.max(
@@ -174,11 +203,13 @@ const LayoutPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   }, [doubleBorder]);
 
   useEffect(() => {
+    // Save borderColor to view settings
     saveViewSettings(envConfig, bookKey, 'borderColor', borderColor, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [borderColor]);
 
   useEffect(() => {
+    // Save showHeader to view settings and adjust marginPx or gapPercent if necessary
     if (showHeader === viewSettings.showHeader) return;
     if (showHeader && !viewSettings.vertical) {
       viewSettings.marginPx = Math.max(viewSettings.marginPx, 44);
@@ -197,6 +228,7 @@ const LayoutPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   }, [showHeader]);
 
   useEffect(() => {
+    // Save showFooter to view settings and adjust marginPx or gapPercent if necessary
     if (showFooter === viewSettings.showFooter) return;
     if (showFooter && !viewSettings.vertical) {
       viewSettings.marginPx = Math.max(viewSettings.marginPx, 44);
@@ -214,11 +246,14 @@ const LayoutPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showFooter]);
 
+  // Determine if the book might be RTL based on language code or CJK environment
   const langCode = getBookLangCode(bookData.bookDoc?.metadata?.language);
   const mightBeRTLBook = MIGHT_BE_RTL_LANGS.includes(langCode) || isCJKEnv();
 
+  // Render the component UI
   return (
     <div className='my-4 w-full space-y-6'>
+      {/* Scrolled Mode Setting */}
       <div className='w-full'>
         <div className='flex items-center justify-between'>
           <h2 className='font-medium'>{_('Scrolled Mode')}</h2>
@@ -231,6 +266,7 @@ const LayoutPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
         </div>
       </div>
 
+      {/* Writing Mode Settings (only shown for RTL books) */}
       {mightBeRTLBook && (
         <div className='w-full'>
           <div className='flex items-center justify-between'>
@@ -276,6 +312,7 @@ const LayoutPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
         </div>
       )}
 
+      {/* Border Frame Settings (only shown in vertical mode) */}
       {viewSettings.vertical && (
         <div className='w-full'>
           <h2 className='mb-2 font-medium'>{_('Border Frame')}</h2>
@@ -310,6 +347,7 @@ const LayoutPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
         </div>
       )}
 
+      {/* Paragraph Settings */}
       <div className='w-full'>
         <h2 className='mb-2 font-medium'>{_('Paragraph')}</h2>
         <div className='card bg-base-100 border-base-200 border shadow'>
@@ -387,6 +425,7 @@ const LayoutPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
         </div>
       </div>
 
+      {/* Page Settings */}
       <div className='w-full'>
         <h2 className='mb-2 font-medium'>{_('Page')}</h2>
         <div className='card bg-base-100 border-base-200 border shadow'>

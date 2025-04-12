@@ -1,35 +1,55 @@
 import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
 import { FiMinus, FiPlus } from 'react-icons/fi';
-
+/**
+ * Interface for the NumberInput component's props.
+ */
 interface NumberInputProps {
-  className?: string;
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step?: number;
-  disabled?: boolean;
-  onChange: (value: number) => void;
+  className?: string; // Optional CSS class name for styling.
+  label: string; // Label to display next to the input.
+  value: number; // Current value of the input.
+  min: number; // Minimum allowed value.
+  max: number; // Maximum allowed value.
+  step?: number; // Step for increment/decrement buttons, defaults to 1.
+  disabled?: boolean; // Whether the input is disabled.
+  onChange: (value: number) => void; // Callback function for value changes.
 }
-
+/**
+ * NumberInput Component
+ *
+ * A controlled component for numerical input with increment and decrement buttons.
+ */
 const NumberInput: React.FC<NumberInputProps> = ({
   className,
   label,
   value,
   onChange,
   min,
-  max,
-  step,
-  disabled,
+  max, // Maximum value
+  step, // Step for increment/decrement
+  disabled, // Indicates whether the input is disabled or not
 }) => {
+  // Local state to manage the input's value.
   const [localValue, setLocalValue] = useState(value);
+  // If a step value is provided, use it. Otherwise, default to 1.
   const numberStep = step || 1;
-
+  /**
+   * Effect to synchronize localValue with the external value prop.
+   * This is important for when the value is changed from outside the component.
+   */
   useEffect(() => {
     setLocalValue(value);
   }, [value]);
 
+  /**
+   * Handles input change events.
+   *
+   * Validates the input and updates the local state and calls onChange prop.
+   *
+   * @param e - The change event.
+   *
+   * @returns void
+   */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
 
@@ -44,27 +64,46 @@ const NumberInput: React.FC<NumberInputProps> = ({
       }
     }
   };
-
+  /**
+   * Increments the value by the step, up to the maximum value.
+   *
+   * @returns void
+   */
   const increment = () => {
     const newValue = Math.min(max, localValue + numberStep);
     const roundedValue = Math.round(newValue * 10) / 10;
     setLocalValue(roundedValue);
     onChange(roundedValue);
   };
-
+  /**
+   * Decrements the value by the step, down to the minimum value.
+   *
+   * @returns void
+   */
   const decrement = () => {
     const newValue = Math.max(min, localValue - numberStep);
     const roundedValue = Math.round(newValue * 10) / 10;
     setLocalValue(roundedValue);
     onChange(roundedValue);
   };
-
+  /**
+   * Handles blur events to ensure the value is within the valid range.
+   *
+   * @returns void
+   */
   const handleOnBlur = () => {
     const newValue = Math.max(min, Math.min(max, localValue));
     setLocalValue(newValue);
     onChange(newValue);
   };
 
+  /**
+   * Renders the component.
+   *
+   * It consists of a label, an input field, and increment/decrement buttons.
+   *
+   * @returns JSX.Element
+   */
   return (
     <div className={clsx('config-item', className)}>
       <span className='text-base-content'>{label}</span>

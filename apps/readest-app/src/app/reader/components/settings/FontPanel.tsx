@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
 
+
 import {
   ANDROID_FONTS,
   CJK_FONTS_PATTENS,
@@ -15,6 +16,7 @@ import {
 } from '@/services/constants';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
+// Context hook to get environment-related configurations.
 import { useEnv } from '@/context/EnvContext';
 import { getOSPlatform, isCJKEnv } from '@/utils/misc';
 import { getSysFontsList } from '@/utils/font';
@@ -23,6 +25,7 @@ import { saveViewSettings } from '../../utils/viewSettingsHelper';
 import NumberInput from './NumberInput';
 import FontDropdown from './FontDropDown';
 
+// Define the properties for the FontFace component.
 interface FontFaceProps {
   className?: string;
   family: string;
@@ -33,10 +36,12 @@ interface FontFaceProps {
   onSelect: (option: string) => void;
 }
 
+// Function to generate the font family string for font-face rules.
 const handleFontFaceFont = (option: string, family: string) => {
   return `'${option}', ${family}`;
 };
 
+// FontFace component to render a single font face configuration.
 const FontFace = ({
   className,
   family,
@@ -46,6 +51,7 @@ const FontFace = ({
   selected,
   onSelect,
 }: FontFaceProps) => {
+  // Use the translation hook for localization.
   const _ = useTranslation();
   return (
     <div className={clsx('config-item', className)}>
@@ -62,15 +68,20 @@ const FontFace = ({
   );
 };
 
+// Main FontPanel component to manage all font settings.
 const FontPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
+  // Use the translation hook for localization.
   const _ = useTranslation();
+  // Get environment configurations and app services.
   const { envConfig, appService } = useEnv();
+  // Get view and view settings for the current book from the reader store.
   const { getView, getViewSettings } = useReaderStore();
   const viewSettings = getViewSettings(bookKey)!;
   const view = getView(bookKey)!;
 
   const fontFamilyOptions = [
     {
+      // Option for Serif font.
       option: 'Serif',
       label: _('Serif Font'),
     },
@@ -80,8 +91,10 @@ const FontPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     },
   ];
 
+  // Determine the OS platform to select the default system fonts.
   const osPlatform = getOSPlatform();
   let defaultSysFonts: string[] = [];
+  // Set the default system fonts based on the OS platform.
   switch (osPlatform) {
     case 'macos':
       defaultSysFonts = MACOS_FONTS;
@@ -101,6 +114,7 @@ const FontPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     default:
       break;
   }
+  // State variables to manage font settings.
   const [sysFonts, setSysFonts] = useState<string[]>(defaultSysFonts);
   const [defaultFontSize, setDefaultFontSize] = useState(viewSettings.defaultFontSize!);
   const [minFontSize, setMinFontSize] = useState(viewSettings.minimumFontSize!);
@@ -112,6 +126,7 @@ const FontPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   const [monospaceFont, setMonospaceFont] = useState(viewSettings.monospaceFont!);
   const [fontWeight, setFontWeight] = useState(viewSettings.fontWeight!);
 
+  // Effect to load system fonts if the app is a Tauri app.
   useEffect(() => {
     if (isTauriAppPlatform() && appService?.hasSysFontsList) {
       getSysFontsList().then((fonts) => {
@@ -121,51 +136,60 @@ const FontPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Effect to save the default font setting.
   useEffect(() => {
     saveViewSettings(envConfig, bookKey, 'defaultFont', defaultFont);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultFont]);
 
+  // Effect to save the default CJK font setting.
   useEffect(() => {
     saveViewSettings(envConfig, bookKey, 'defaultCJKFont', defaultCJKFont);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultCJKFont]);
 
+  // Effect to save the default font size setting.
   useEffect(() => {
     saveViewSettings(envConfig, bookKey, 'defaultFontSize', defaultFontSize);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultFontSize]);
 
+  // Effect to save the minimum font size setting.
   useEffect(() => {
     saveViewSettings(envConfig, bookKey, 'minimumFontSize', minFontSize);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [minFontSize]);
 
+  // Effect to save the font weight setting.
   useEffect(() => {
     saveViewSettings(envConfig, bookKey, 'fontWeight', fontWeight);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fontWeight]);
 
+  // Effect to save the serif font setting.
   useEffect(() => {
     saveViewSettings(envConfig, bookKey, 'serifFont', serifFont);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serifFont]);
 
+  // Effect to save the sans-serif font setting.
   useEffect(() => {
     saveViewSettings(envConfig, bookKey, 'sansSerifFont', sansSerifFont);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sansSerifFont]);
 
+  // Effect to save the monospace font setting.
   useEffect(() => {
     saveViewSettings(envConfig, bookKey, 'monospaceFont', monospaceFont);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [monospaceFont]);
 
+  // Effect to save the override font setting.
   useEffect(() => {
     saveViewSettings(envConfig, bookKey, 'overrideFont', overrideFont);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [overrideFont]);
-
+  // Function to handle the font family based on the selected option.
   const handleFontFamilyFont = (option: string) => {
     switch (option) {
       case 'Serif':
@@ -178,6 +202,7 @@ const FontPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
         return '';
     }
   };
+  // Render the font panel settings.
 
   return (
     <div className='my-4 w-full space-y-6'>

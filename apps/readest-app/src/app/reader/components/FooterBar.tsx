@@ -1,33 +1,46 @@
 import React from 'react';
 import clsx from 'clsx';
+// Import necessary icons from 'react-icons' for UI elements
 import { RiArrowLeftWideLine, RiArrowRightWideLine } from 'react-icons/ri';
 import { RiArrowGoBackLine, RiArrowGoForwardLine } from 'react-icons/ri';
 import { FaHeadphones } from 'react-icons/fa6';
 import { IoIosList as TOCIcon } from 'react-icons/io';
 import { PiNotePencil as NoteIcon } from 'react-icons/pi';
-import { RxSlider as SliderIcon } from 'react-icons/rx';
+import { RxSlider as SliderIcon } from 'react-icons/rx'; // Slider Icon
 import { RiFontFamily as FontIcon } from 'react-icons/ri';
-import { MdOutlineHeadphones as TTSIcon } from 'react-icons/md';
+import { MdOutlineHeadphones as TTSIcon } from 'react-icons/md'; // Text to speech icon
 import { TbBoxMargin } from 'react-icons/tb';
 import { RxLineHeight } from 'react-icons/rx';
 
+// Import custom hooks and utilities
 import { useEnv } from '@/context/EnvContext';
 import { useReaderStore } from '@/store/readerStore';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { eventDispatcher } from '@/utils/event';
+// Import utility to save view settings
 import { saveViewSettings } from '../utils/viewSettingsHelper';
 import { PageInfo } from '@/types/book';
+// Import custom components
 import Button from '@/components/Button';
 import Slider from '@/components/Slider';
 
+/**
+ * Interface for the props of the FooterBar component.
+ * @interface FooterBarProps
+ * @property {string} bookKey - The key identifier for the book.
+ * @property {string} bookFormat - The format of the book (e.g., 'EPUB', 'PDF').
+ * @property {PageInfo} [section] - Information about the current section (for PDF format).
+ * @property {PageInfo} [pageinfo] - Information about the current page (for non-PDF formats).
+ * @property {boolean} isHoveredAnim - Indicates if the hover animation is active.
+ */
 interface FooterBarProps {
   bookKey: string;
   bookFormat: string;
   section?: PageInfo;
   pageinfo?: PageInfo;
-  isHoveredAnim: boolean;
+  isHoveredAnim: boolean; // Indicates whether the footer bar is hovered
 }
 
 const FooterBar: React.FC<FooterBarProps> = ({
@@ -37,29 +50,47 @@ const FooterBar: React.FC<FooterBarProps> = ({
   pageinfo,
   isHoveredAnim,
 }) => {
+  // Custom hooks for translation, environment, reader store, and sidebar store
   const _ = useTranslation();
   const { envConfig, appService } = useEnv();
   const { hoveredBookKey, setHoveredBookKey, getView, getProgress, getViewSettings } =
     useReaderStore();
   const { isSideBarVisible, setSideBarVisible } = useSidebarStore();
+
+  // State to manage the active tab in the footer bar
   const [actionTab, setActionTab] = React.useState('');
+
+  // Responsive sizes for UI elements based on screen size
   const sliderHeight = useResponsiveSize(28);
   const tocIconSize = useResponsiveSize(23);
   const fontIconSize = useResponsiveSize(18);
   const marginIconSize = useResponsiveSize(20);
 
+  // Retrieve view, progress, and view settings for the current book
   const view = getView(bookKey);
   const progress = getProgress(bookKey);
   const viewSettings = getViewSettings(bookKey);
 
+  /**
+   * Handles the change in progress (page navigation).
+   * @param {number} value - The new progress value (0-100).
+   */
   const handleProgressChange = (value: number) => {
     view?.goToFraction(value / 100.0);
   };
 
+  /**
+   * Handles the change in font size.
+   * @param {number} value - The new font size.
+   */
   const handleFontSizeChange = (value: number) => {
     saveViewSettings(envConfig, bookKey, 'defaultFontSize', value);
   };
 
+  /**
+   * Handles the change in margin and gap settings.
+   * @param {number} value - The new margin/gap value (0-100).
+   */
   const handleMarginChange = (value: number) => {
     const marginPx = Math.round((value / 100) * 88);
     const gapPercent = Math.round((value / 100) * 10);
@@ -72,39 +103,66 @@ const FooterBar: React.FC<FooterBarProps> = ({
     }
   };
 
+  /**
+   * Handles the change in line height.
+   * @param {number} value - The new line height value.
+   */
   const handleLineHeightChange = (value: number) => {
     saveViewSettings(envConfig, bookKey, 'lineHeight', value / 10);
   };
 
+  /**
+   * Navigate to the previous page.
+   */
   const handleGoPrev = () => {
     view?.goLeft();
   };
 
+  /**
+   * Navigate to the next page.
+   */
   const handleGoNext = () => {
     view?.goRight();
   };
 
+  /**
+   * Navigate back in the history.
+   */
   const handleGoBack = () => {
     view?.history.back();
   };
 
+  /**
+   * Navigate forward in the history.
+   */
   const handleGoForward = () => {
     view?.history.forward();
   };
 
+  /**
+   * Handles text-to-speech functionality.
+   * Starts or stops speech based on the current state.
+   */
   const handleSpeakText = async () => {
     if (!view || !progress) return;
     const { range } = progress;
+    // Check if TTS is currently active
     if (eventDispatcher.dispatchSync('tts-is-speaking')) {
+      // Stop text-to-speech
       eventDispatcher.dispatch('tts-stop', { bookKey });
     } else {
+      // Start text-to-speech
       eventDispatcher.dispatch('tts-speak', { bookKey, range });
     }
   };
 
+  /**
+   * Sets the currently active tab in the footer bar.
+   * @param {string} tab - The name of the tab to set.
+   */
   const handleSetActionTab = (tab: string) => {
-    console.log('handleSetActionTab', tab);
     setActionTab(actionTab === tab ? '' : tab);
+    // Handle specific actions based on the selected tab
     if (tab === 'tts') {
       setHoveredBookKey('');
       handleSpeakText();
@@ -123,11 +181,21 @@ const FooterBar: React.FC<FooterBarProps> = ({
     }
   };
 
+  /**
+   * Calculates the combined progress value for margin and gap.
+   * @param {number} marginPx - The margin in pixels.
+   * @param {number} gapPercent - The gap percentage.
+   * @returns {number} The calculated progress value.
+   */
   const getMarginProgressValue = (marginPx: number, gapPercent: number) => {
     return (marginPx / 88 + gapPercent / 10) * 50;
   };
 
+  // Determine if the footer bar should be visible based on the hovered state
   const isVisible = hoveredBookKey === bookKey;
+
+  // Determine progress information based on book format
+
   const progressInfo = bookFormat === 'PDF' ? section : pageinfo;
   const progressValid = !!progressInfo;
   const progressFraction = progressValid
@@ -137,6 +205,7 @@ const FooterBar: React.FC<FooterBarProps> = ({
   return (
     <>
       <div
+      // Hidden element to trigger onHover in parent element
         className={clsx(
           'absolute bottom-0 left-0 z-10 hidden w-full sm:flex sm:h-[52px]',
           // show scroll bar when vertical and scrolled in desktop
@@ -146,6 +215,7 @@ const FooterBar: React.FC<FooterBarProps> = ({
         onTouchStart={() => !appService?.isMobile && setHoveredBookKey(bookKey)}
       />
       <div
+        // Main FooterBar container
         className={clsx(
           'footer-bar shadow-xs absolute bottom-0 z-50 flex w-full flex-col',
           'sm:h-[52px] sm:justify-center',
@@ -165,6 +235,7 @@ const FooterBar: React.FC<FooterBarProps> = ({
         aria-hidden={!isVisible}
       >
         {/* Mobile footer bar */}
+        {/* Progress Tab for mobile devices */}
         <div
           className={clsx(
             'bg-base-200 absolute bottom-16 flex w-full items-center gap-x-2 px-4 transition-all sm:hidden',
@@ -207,6 +278,7 @@ const FooterBar: React.FC<FooterBarProps> = ({
             tooltip={viewSettings?.rtl ? _('Go Left') : _('Go Right')}
           />
         </div>
+        {/* Font and layout settings for mobile */}
         <div
           className={clsx(
             'bg-base-200 absolute flex w-full flex-col items-center gap-y-8 px-4 transition-all sm:hidden',
@@ -254,6 +326,7 @@ const FooterBar: React.FC<FooterBarProps> = ({
             />
           </div>
         </div>
+        {/* Navigation buttons in mobile footer bar */}
         <div
           className={clsx(
             'bg-base-200 z-50 mt-auto flex w-full justify-between px-8 py-4 sm:hidden',

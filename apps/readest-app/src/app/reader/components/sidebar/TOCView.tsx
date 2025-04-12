@@ -9,6 +9,11 @@ import { getContentMd5 } from '@/utils/misc';
 import { eventDispatcher } from '@/utils/event';
 import { BookProgress } from '@/types/book';
 
+/**
+ * Creates an expander icon SVG.
+ * @param isExpanded - Indicates whether the item is expanded or not.
+ */
+
 const createExpanderIcon = (isExpanded: boolean) => {
   return (
     <svg
@@ -27,13 +32,23 @@ const createExpanderIcon = (isExpanded: boolean) => {
   );
 };
 
+/**
+ * Represents a single Table of Contents (TOC) item view.
+ * @param bookKey - The unique identifier for the book.
+ * @param item - The TOC item data.
+ * @param depth - The depth of the item in the TOC hierarchy.
+ * @param expandedItems - An array of expanded item hrefs.
+ */
 const TOCItemView: React.FC<{
   bookKey: string;
   item: TOCItem;
   depth: number;
   expandedItems: string[];
 }> = ({ bookKey, item, depth, expandedItems }) => {
+  // State to manage the expanded/collapsed state of the item
   const [isExpanded, setIsExpanded] = useState(expandedItems.includes(item.href || ''));
+
+  // Access reader store for view and progress information
   const { getView, getProgress } = useReaderStore();
   const progress = getProgress(bookKey);
 
@@ -43,6 +58,7 @@ const TOCItemView: React.FC<{
     setIsExpanded((prev) => !prev);
   };
 
+  // Handles click on the TOC item to navigate
   const handleClickItem = (event: React.MouseEvent) => {
     event.preventDefault();
     eventDispatcher.dispatch('navigate', { bookKey, href: item.href });
@@ -51,8 +67,10 @@ const TOCItemView: React.FC<{
     }
   };
 
+  // Checks if the current item is active based on reading progress
   const isActive = progress ? progress.sectionHref === item.href : false;
 
+  // Update isExpanded when expandedItems changes
   useEffect(() => {
     setIsExpanded(expandedItems.includes(item.href || ''));
   }, [expandedItems, item.href]);
@@ -104,18 +122,29 @@ const TOCItemView: React.FC<{
   );
 };
 
+/**
+ * Represents the Table of Contents (TOC) view component.
+ * @param bookKey - The unique identifier for the book.
+ * @param toc - The Table of Contents data.
+ */
 const TOCView: React.FC<{
   bookKey: string;
   toc: TOCItem[];
 }> = ({ bookKey, toc }) => {
+  // Access reader and sidebar stores
   const { getProgress } = useReaderStore();
   const { sideBarBookKey } = useSidebarStore();
   const progress = getProgress(bookKey);
 
+  // State to manage expanded items in the TOC
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+
+  // Ref for the TOC view
   const viewRef = useRef<HTMLUListElement | null>(null);
 
+  // Expands the parent items in the TOC
   const expandParents = (toc: TOCItem[], href: string) => {
+    //find the parent of the given href in the table of content
     const parentPath = findParentPath(toc, href).map((item) => item.href);
     setExpandedItems(parentPath.filter(Boolean) as string[]);
   };
@@ -151,6 +180,7 @@ const TOCView: React.FC<{
     }
     return () => observer.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    //recalculate and adjust the scroll when the table of content is added/removed
   }, [viewRef]);
 
   useEffect(() => {
@@ -159,6 +189,7 @@ const TOCView: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toc, progress, sideBarBookKey]);
 
+  // Render the TOC view
   return (
     <div className='rounded pt-2'>
       <ul role='tree' ref={viewRef} className='px-2'>

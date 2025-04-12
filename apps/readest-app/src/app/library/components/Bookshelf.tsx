@@ -1,33 +1,46 @@
 import clsx from 'clsx';
 import * as React from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import {
+  useRouter,
+  useSearchParams,
+} from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { MdDelete, MdOpenInNew, MdOutlineCancel } from 'react-icons/md';
 import { LuFolderPlus } from 'react-icons/lu';
 import { PiPlus } from 'react-icons/pi';
-import { Book, BooksGroup } from '@/types/book';
+import { Book, BooksGroup } from '@/types/book'; // Importing book-related types
 import { useEnv } from '@/context/EnvContext';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { navigateToLibrary, navigateToReader } from '@/utils/nav';
-import { formatAuthors, formatTitle } from '@/utils/book';
-import { isMd5 } from '@/utils/md5';
+import {
+  formatAuthors,
+  formatTitle,
+} from '@/utils/book'; // Importing utility functions for book data
+import { isMd5 } from '@/utils/md5'; // Importing md5 utility function
 
-import Alert from '@/components/Alert';
-import Spinner from '@/components/Spinner';
-import BookshelfItem, { generateBookshelfItems } from './BookshelfItem';
-import GroupingModal from './GroupingModal';
+import Alert from '@/components/Alert'; // Importing Alert component
+import Spinner from '@/components/Spinner'; // Importing Spinner component
+import BookshelfItem, {
+  generateBookshelfItems,
+} from './BookshelfItem'; // Importing BookshelfItem component and related utility function
+import GroupingModal from './GroupingModal'; // Importing GroupingModal component
 
+// Interface for the Bookshelf component's properties
 interface BookshelfProps {
-  libraryBooks: Book[];
-  isSelectMode: boolean;
-  handleImportBooks: () => void;
-  handleBookUpload: (book: Book) => Promise<boolean>;
-  handleBookDownload: (book: Book) => Promise<boolean>;
-  handleBookDelete: (book: Book) => Promise<boolean>;
-  handleSetSelectMode: (selectMode: boolean) => void;
-  handleShowDetailsBook: (book: Book) => void;
-  booksTransferProgress: { [key: string]: number | null };
+  libraryBooks: Book[]; // Array of books in the library
+  isSelectMode: boolean; // Flag to indicate if selection mode is active
+  handleImportBooks: () => void; // Function to handle importing books
+  handleBookUpload: (book: Book) => Promise<boolean>; // Function to handle uploading a book
+  handleBookDownload: (book: Book) => Promise<boolean>; // Function to handle downloading a book
+  handleBookDelete: (book: Book) => Promise<boolean>; // Function to handle deleting a book
+  handleSetSelectMode: (
+    selectMode: boolean,
+  ) => void; // Function to set the select mode
+  handleShowDetailsBook: (book: Book) => void; // Function to show details of a book
+  booksTransferProgress: {
+    [key: string]: number | null;
+  }; // Object to track the transfer progress of books
 }
 
 const Bookshelf: React.FC<BookshelfProps> = ({
@@ -40,36 +53,52 @@ const Bookshelf: React.FC<BookshelfProps> = ({
   handleSetSelectMode,
   handleShowDetailsBook,
   booksTransferProgress,
-}) => {
-  const _ = useTranslation();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { appService } = useEnv();
-  const [loading, setLoading] = useState(false);
-  const [selectedBooks, setSelectedBooks] = useState<string[]>([]);
-  const [showSelectModeActions, setShowSelectModeActions] = useState(false);
-  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
-  const [showGroupingModal, setShowGroupingModal] = useState(false);
-  const [queryTerm, setQueryTerm] = useState<string | null>(null);
-  const [navBooksGroup, setNavBooksGroup] = useState<BooksGroup | null>(null);
-  const [importBookUrl] = useState(searchParams?.get('url') || '');
-  const isImportingBook = useRef(false);
+}: BookshelfProps) => {
+  const _ = useTranslation(); // Hook for translations
+  const router = useRouter(); // Hook for routing
+  const searchParams = useSearchParams(); // Hook for getting search parameters
+  const { appService } = useEnv(); // Accessing app services from environment context
+  const [loading, setLoading] = useState(false); // State to track loading status
+  const [selectedBooks, setSelectedBooks] = useState<string[]>([]); // State to manage selected books
+  const [
+    showSelectModeActions,
+    setShowSelectModeActions,
+  ] = useState(false); // State to show/hide select mode actions
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false); // State to show/hide delete alert
+  const [
+    showGroupingModal,
+    setShowGroupingModal,
+  ] = useState(false); // State to show/hide grouping modal
+  const [queryTerm, setQueryTerm] = useState<string | null>(
+    null,
+  ); // State to track the search query term
+  const [navBooksGroup, setNavBooksGroup] = useState<BooksGroup | null>(
+    null,
+  ); // State to manage navigation within book groups
+  const [importBookUrl] = useState(
+    searchParams?.get('url') || '',
+  ); // State to manage the URL for importing a book
+  const isImportingBook = useRef(false); // Ref to track if a book is being imported
 
-  const { setLibrary } = useLibraryStore();
-  const allBookshelfItems = generateBookshelfItems(libraryBooks);
+  const { setLibrary } = useLibraryStore(); // Accessing setLibrary function from library store
+  const allBookshelfItems = generateBookshelfItems(
+    libraryBooks,
+  ); // Generating bookshelf items from library books
 
+  // Effect to handle showing/hiding select mode actions
   useEffect(() => {
     if (isSelectMode) {
       setShowSelectModeActions(true);
     } else {
-      setSelectedBooks([]);
-      setShowSelectModeActions(false);
+      setSelectedBooks([]); // Clear selected books
+      setShowSelectModeActions(false); // Hide select mode actions
     }
   }, [isSelectMode]);
 
+  // Effect to handle importing a book from a URL
   useEffect(() => {
-    if (isImportingBook.current) return;
-    isImportingBook.current = true;
+    if (isImportingBook.current) return; // Prevent multiple imports
+    isImportingBook.current = true; // Set flag to indicate import is in progress
 
     if (importBookUrl && appService) {
       const importBook = async () => {
@@ -82,35 +111,44 @@ const Bookshelf: React.FC<BookshelfProps> = ({
         }
       };
       importBook();
+      isImportingBook.current = false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [importBookUrl, appService]);
 
+  // Effect to handle changes in search parameters and library books
   useEffect(() => {
-    const group = searchParams?.get('group') || '';
-    const query = searchParams?.get('q') || '';
-    if (query) {
-      setQueryTerm(query);
+    const group = searchParams?.get('group') || ''; // Get group from search params
+    const query = searchParams?.get('q') || ''; // Get query from search params
+    if (query) { // If there is a query
+      setQueryTerm(query); // Set the query term
     } else {
-      setQueryTerm(null);
+      setQueryTerm(null); // Clear the query term
     }
-    if (group) {
+    if (group) { // If there is a group
       const booksGroup = allBookshelfItems.find(
         (item) => 'name' in item && item.id === group,
-      ) as BooksGroup;
+      ) as BooksGroup; // Find the book group
       if (booksGroup) {
-        setNavBooksGroup(booksGroup);
+        setNavBooksGroup(booksGroup); // Set the navigation book group
       } else {
-        navigateToLibrary(router, query ? `q=${query}` : undefined);
+        navigateToLibrary(
+          router,
+          query ? `q=${query}` : undefined,
+        ); // Navigate to library with or without query
       }
     } else {
-      setNavBooksGroup(null);
-      navigateToLibrary(router, query ? `q=${query}` : undefined);
+      setNavBooksGroup(null); // Clear the navigation book group
+      navigateToLibrary(
+        router,
+        query ? `q=${query}` : undefined,
+      ); // Navigate to library with or without query
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, libraryBooks, showGroupingModal]);
 
   const toggleSelection = (id: string) => {
+    // Toggles the selection of a book by its id
     setSelectedBooks((prev) =>
       prev.includes(id) ? prev.filter((selectedId) => selectedId !== id) : [...prev, id],
     );
@@ -119,35 +157,52 @@ const Bookshelf: React.FC<BookshelfProps> = ({
   const openSelectedBooks = () => {
     setTimeout(() => setLoading(true), 200);
     navigateToReader(router, selectedBooks);
+    // Open selected books in the reader
   };
 
+  // Confirms the deletion of selected books
   const confirmDelete = async () => {
+    // Iterate over each selected book
     selectedBooks.forEach((id) => {
-      for (const book of libraryBooks.filter((book) => book.hash === id || book.groupId === id)) {
+      // Find books with matching hash or groupId
+      for (const book of libraryBooks.filter(
+        (book) => book.hash === id || book.groupId === id,
+      )) {
+        // If the book exists and is not already marked as deleted
         if (book && !book.deletedAt) {
-          handleBookDelete(book);
+          handleBookDelete(book); // Delete the book
         }
       }
     });
-    setSelectedBooks([]);
-    setShowDeleteAlert(false);
-    setShowSelectModeActions(true);
+    setSelectedBooks([]); // Clear the selected books
+    setShowDeleteAlert(false); // Hide the delete alert
+    setShowSelectModeActions(true); // Show the select mode actions
   };
 
   const deleteSelectedBooks = () => {
-    setShowSelectModeActions(false);
-    setShowDeleteAlert(true);
+    setShowSelectModeActions(false); // Hide the select mode actions
+    setShowDeleteAlert(true); // Show the delete alert
   };
 
   const groupSelectedBooks = () => {
-    setShowSelectModeActions(false);
-    setShowGroupingModal(true);
+    setShowSelectModeActions(false); // Hide the select mode actions
+    setShowGroupingModal(true); // Show the grouping modal
   };
 
-  const currentBookshelfItems = navBooksGroup ? navBooksGroup.books : allBookshelfItems;
+  // Determine current bookshelf items based on navigation group
+  const currentBookshelfItems = navBooksGroup
+    ? navBooksGroup.books
+    : allBookshelfItems;
+
+  // Filters a book based on a query term
   const bookFilter = (item: Book, queryTerm: string) => {
+    // If the item is marked as deleted, exclude it
     if (item.deletedAt) return false;
+
+    // Create a case-insensitive regular expression from the query term
     const searchTerm = new RegExp(queryTerm, 'i');
+
+    // Format the title and authors for matching
     const title = formatTitle(item.title);
     const authors = formatAuthors(item.author);
     return searchTerm.test(title) || searchTerm.test(authors);
@@ -156,16 +211,20 @@ const Bookshelf: React.FC<BookshelfProps> = ({
     if ('name' in item) return item.books.some((book) => bookFilter(book, queryTerm || ''));
     else if (queryTerm) return bookFilter(item, queryTerm);
     return true;
+    
   });
 
   return (
     <div className='bookshelf'>
       <div
         className={clsx(
+          // Grid layout for bookshelf items
           'transform-wrapper grid flex-1 gap-x-4 sm:gap-x-0',
+          // Responsive grid columns
           'grid-cols-3 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-12',
         )}
       >
+        {/* Map over the filtered bookshelf items */}
         {filteredBookshelfItems.map((item, index) => (
           <BookshelfItem
             key={`library-item-${index}`}
@@ -184,6 +243,7 @@ const Bookshelf: React.FC<BookshelfProps> = ({
             }
           />
         ))}
+        {/* Add book button */}
         {!navBooksGroup && allBookshelfItems.length > 0 && (
           <div
             className={clsx(
@@ -197,9 +257,11 @@ const Bookshelf: React.FC<BookshelfProps> = ({
           </div>
         )}
       </div>
+      {/* Loading spinner */}
       {loading && (
         <div className='fixed inset-0 z-50 flex items-center justify-center'>
-          <Spinner loading />
+          <Spinner loading /> 
+          {/* Render the spinner component when loading is true */}
         </div>
       )}
       <div className='fixed bottom-0 left-0 right-0 z-40 pb-[calc(env(safe-area-inset-bottom)+16px)]'>
@@ -210,6 +272,7 @@ const Bookshelf: React.FC<BookshelfProps> = ({
               'text-base-content bg-base-300 text-sm',
               'mx-auto w-fit space-x-6 rounded-lg p-4',
             )}
+            {/* Open Selected Books Button */}
           >
             <button
               onClick={openSelectedBooks}
@@ -220,6 +283,7 @@ const Bookshelf: React.FC<BookshelfProps> = ({
               )}
             >
               <MdOpenInNew />
+              {/* Display the 'Open' text */}
               <div>{_('Open')}</div>
             </button>
             <button
@@ -248,6 +312,7 @@ const Bookshelf: React.FC<BookshelfProps> = ({
             >
               <MdOutlineCancel />
               <div>{_('Cancel')}</div>
+              {/* Cancel Button */}
             </button>
           </div>
         )}

@@ -13,34 +13,54 @@ import cssValidate from '@/utils/css';
 import DropDown from './DropDown';
 
 const MiscPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
+  // Get translation function
   const _ = useTranslation();
+  // Access environment variables and app service
   const { envConfig, appService } = useEnv();
+  // Access settings and font layout settings from the store
   const { settings, isFontLayoutSettingsGlobal, setSettings } = useSettingsStore();
+  // Access view settings and functions from the reader store
   const { getView, getViewSettings, setViewSettings } = useReaderStore();
+  // Retrieve view settings for the current book
   const viewSettings = getViewSettings(bookKey)!;
 
+  // State for whether page turn animation is enabled
   const [animated, setAnimated] = useState(viewSettings.animated!);
+  // State for whether click-to-flip is disabled
   const [isDisableClick, setIsDisableClick] = useState(viewSettings.disableClick!);
+  // State for swapping the click-to-flip area
   const [swapClickArea, setSwapClickArea] = useState(viewSettings.swapClickArea!);
+  // State for continuous scrolling mode
   const [isContinuousScroll, setIsContinuousScroll] = useState(viewSettings.continuousScroll!);
+  // State for the current custom CSS stylesheet draft
   const [draftStylesheet, setDraftStylesheet] = useState(viewSettings.userStylesheet!);
+  // State to track if the custom CSS stylesheet draft has been saved
   const [draftStylesheetSaved, setDraftStylesheetSaved] = useState(true);
+  // State to track CSS validation errors
   const [error, setError] = useState<string | null>(null);
 
+  // State to track if input is focused on Android
   const [inputFocusInAndroid, setInputFocusInAndroid] = useState(false);
+  // Ref to the textarea element
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
+  // Handler for changes to the custom CSS stylesheet textarea
   const handleUserStylesheetChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    // Get the current CSS input
     const cssInput = e.target.value;
+    // Update the stylesheet draft state
     setDraftStylesheet(cssInput);
+    // Mark the stylesheet as unsaved
     setDraftStylesheetSaved(false);
 
+    // Validate the CSS input
     try {
       const { isValid, error } = cssValidate(cssInput);
       if (cssInput && !isValid) {
         throw new Error(error || 'Invalid CSS');
       }
       setError(null);
+    // Catch CSS validation errors
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -51,33 +71,42 @@ const MiscPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     }
   };
 
+  // Apply the current stylesheet to the book view
   const applyStyles = () => {
+    // Format the CSS for better readability
     const formattedCSS = cssbeautify(draftStylesheet, {
       indent: '  ',
       openbrace: 'end-of-line',
       autosemicolon: true,
     });
-
+    // Update the stylesheet with the formatted CSS
     setDraftStylesheet(formattedCSS);
+    // Mark the stylesheet as saved
     setDraftStylesheetSaved(true);
+    // Update the view settings with the new stylesheet
     viewSettings.userStylesheet = formattedCSS;
     setViewSettings(bookKey, { ...viewSettings });
 
+    // If global font and layout settings are used, update them as well
     if (isFontLayoutSettingsGlobal) {
       settings.globalViewSettings.userStylesheet = formattedCSS;
       setSettings(settings);
     }
 
+    // Apply the new styles to the book renderer
     getView(bookKey)?.renderer.setStyles?.(getStyles(viewSettings));
   };
 
+  // Prevent input events from propagating further
   const handleInput = (e: React.FormEvent<HTMLTextAreaElement>) => {
     e.stopPropagation();
     e.nativeEvent.stopImmediatePropagation();
   };
 
+  // Handler for input focus
   const handleInputFocus = () => {
     if (appService?.isAndroidApp) {
+      // Set the input as focused on Android
       setInputFocusInAndroid(true);
     }
     setTimeout(() => {
@@ -87,22 +116,27 @@ const MiscPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
       });
     }, 300);
   };
-
+  // Handler for input blur
   const handleInputBlur = () => {
     if (appService?.isAndroidApp) {
       setTimeout(() => {
+        // Remove the input as focused on Android
         setInputFocusInAndroid(false);
       }, 100);
     }
   };
 
+  // Get the currently selected UI language option
   const getCurrentUILangOption = () => {
+    // Get the language code from settings
     const uiLanguage = viewSettings.uiLanguage;
+    // Return the corresponding language label or 'Auto' if empty
     return {
       option: uiLanguage,
       label:
         uiLanguage === ''
           ? _('Auto')
+          //get the translated label
           : TRANSLATED_LANGS[uiLanguage as keyof typeof TRANSLATED_LANGS],
     };
   };
@@ -118,6 +152,7 @@ const MiscPanel: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   const handleSelectUILang = (option: string) => {
     saveViewSettings(envConfig, bookKey, 'uiLanguage', option, false, false);
     i18n.changeLanguage(option ? option : navigator.language);
+    // Save the settings
   };
 
   useEffect(() => {

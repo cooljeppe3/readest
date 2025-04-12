@@ -4,4 +4,6 @@
     "packages/tauri/Cargo.toml",
     "apps/readest-app/src-tauri/Cargo.toml"
   ],
+  "IDX.aI.enableInlineCompletion": true,
+  "IDX.aI.enableCodebaseIndexing": true,
 }

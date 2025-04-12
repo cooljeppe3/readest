@@ -1,25 +1,39 @@
+// Import necessary modules and components from external libraries and local files.
 import clsx from 'clsx';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useEnv } from '@/context/EnvContext';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useReaderStore } from '@/store/readerStore';
+// Import custom hook for translations.
 import { useTranslation } from '@/hooks/useTranslation';
+// Import custom hook for responsive sizing.
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
+// Import TTSController and silence data for audio.
 import { TTSController, SILENCE_DATA } from '@/services/tts';
+// Import utility functions for calculating popup positions and handling events.
 import { getPopupPosition, Position } from '@/utils/sel';
 import { eventDispatcher } from '@/utils/event';
 import { parseSSMLLang } from '@/utils/ssml';
 import { getOSPlatform } from '@/utils/misc';
 import { throttle } from '@/utils/throttle';
 import { invokeUseBackgroundAudio } from '@/utils/bridge';
+// Import the Popup component for displaying the TTS panel.
 import Popup from '@/components/Popup';
+// Import the TTSPanel and TTSIcon components.
 import TTSPanel from './TTSPanel';
 import TTSIcon from './TTSIcon';
 
+// Define constants for the width, height, and padding of the TTS popup panel.
 const POPUP_WIDTH = 282;
 const POPUP_HEIGHT = 160;
 const POPUP_PADDING = 10;
 
+/**
+ * TTSControl Component
+ *
+ * This component provides controls for Text-to-Speech (TTS) functionality within the application.
+ * It manages the state of TTS playback, including play/pause, rate adjustment, and voice selection.
+ */
 const TTSControl = () => {
   const _ = useTranslation();
   const { appService } = useEnv();
@@ -34,6 +48,7 @@ const TTSControl = () => {
   const [panelPosition, setPanelPosition] = useState<Position>();
   const [trianglePosition, setTrianglePosition] = useState<Position>();
 
+  // State variables for managing timeouts.
   const [timeoutOption, setTimeoutOption] = useState(0);
   const [timeoutTimestamp, setTimeoutTimestamp] = useState(0);
   const [timeoutFunc, setTimeoutFunc] = useState<ReturnType<typeof setTimeout> | null>(null);
@@ -43,10 +58,16 @@ const TTSControl = () => {
   const popupPadding = useResponsiveSize(POPUP_PADDING);
 
   const iconRef = useRef<HTMLDivElement>(null);
+  // Reference to the TTSController instance.
   const ttsControllerRef = useRef<TTSController | null>(null);
+  // Reference to an audio element used to unblock audio playback.
   const unblockerAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  // this enables WebAudio to play even when the mute toggle switch is ON
+  /**
+   * unblockAudio
+   *
+   * Enables WebAudio to play even when the mute toggle switch is ON.
+   */
   const unblockAudio = () => {
     if (unblockerAudioRef.current) return;
     unblockerAudioRef.current = document.createElement('audio');
@@ -57,6 +78,11 @@ const TTSControl = () => {
     unblockerAudioRef.current.play();
   };
 
+  /**
+   * releaseUnblockAudio
+   *
+   * Releases the unblock audio element, stopping playback and removing it from memory.
+   */
   const releaseUnblockAudio = () => {
     if (!unblockerAudioRef.current) return;
     try {
@@ -72,6 +98,10 @@ const TTSControl = () => {
     }
   };
 
+  /**
+   * useEffect Hook
+   * Cleans up the TTS controller when the component unmounts.
+   */
   useEffect(() => {
     return () => {
       if (ttsControllerRef.current) {
@@ -81,6 +111,10 @@ const TTSControl = () => {
     };
   }, []);
 
+  /**
+   * useEffect Hook
+   * Subscribes to events related to TTS operations.
+   */
   useEffect(() => {
     eventDispatcher.on('tts-speak', handleTTSSpeak);
     eventDispatcher.on('tts-stop', handleTTSStop);
@@ -93,6 +127,12 @@ const TTSControl = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /**
+   * handleTTSSpeak
+   *
+   * Initiates TTS playback for a given book and range.
+   * @param event - The custom event containing bookKey and range.
+   */
   const handleTTSSpeak = async (event: CustomEvent) => {
     const { bookKey, range } = event.detail;
     const view = getView(bookKey);
@@ -146,14 +186,28 @@ const TTSControl = () => {
     }
   };
 
+  /**
+   * handleTTSStop
+   *
+   * Stops the current TTS playback.
+   */
   const handleTTSStop = async () => {
     handleStop();
   };
 
+  /**
+   * handleQueryIsSpeaking
+   *
+   * Checks if the TTS controller is currently active.
+   */
   const handleQueryIsSpeaking = () => {
     return !!ttsControllerRef.current;
   };
 
+  /**
+   * handleTogglePlay
+   * Toggles the play/pause state of the TTS playback.
+   */
   const handleTogglePlay = async () => {
     const ttsController = ttsControllerRef.current;
     if (!ttsController) return;
@@ -175,6 +229,10 @@ const TTSControl = () => {
     }
   };
 
+  /**
+   * handleBackward
+   * Moves the TTS playback backward.
+   */
   const handleBackward = async () => {
     const ttsController = ttsControllerRef.current;
     if (ttsController) {
@@ -182,6 +240,10 @@ const TTSControl = () => {
     }
   };
 
+  /**
+   * handleForward
+   * Moves the TTS playback forward.
+   */
   const handleForward = async () => {
     const ttsController = ttsControllerRef.current;
     if (ttsController) {
@@ -189,6 +251,10 @@ const TTSControl = () => {
     }
   };
 
+  /**
+   * handleStop
+   * Stops the TTS playback and performs cleanup.
+   */
   const handleStop = async () => {
     const ttsController = ttsControllerRef.current;
     if (ttsController) {
@@ -208,6 +274,12 @@ const TTSControl = () => {
   };
 
   // rate range: 0.5 - 3, 1.0 is normal speed
+  /**
+   * handleSetRate
+   *
+   * Sets the playback rate of the TTS engine.
+   * @param rate - The new playback rate.
+   */
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleSetRate = useCallback(
     throttle(async (rate: number) => {
@@ -225,6 +297,12 @@ const TTSControl = () => {
     [],
   );
 
+  /**
+   * handleSetVoice
+   *
+   * Sets the voice of the TTS engine.
+   * @param voice - The new voice to be used.
+   */
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleSetVoice = useCallback(
     throttle(async (voice: string) => {
@@ -242,6 +320,12 @@ const TTSControl = () => {
     [],
   );
 
+  /**
+   * handleGetVoices
+   *
+   * Retrieves the available voices for a specific language.
+   * @param lang - The language code for which to retrieve voices.
+   */
   const handleGetVoices = async (lang: string) => {
     const ttsController = ttsControllerRef.current;
     if (ttsController) {
@@ -250,6 +334,11 @@ const TTSControl = () => {
     return [];
   };
 
+  /**
+   * handleGetVoiceId
+   *
+   * Retrieves the current voice ID being used by the TTS engine.
+   */
   const handleGetVoiceId = () => {
     const ttsController = ttsControllerRef.current;
     if (ttsController) {
@@ -258,6 +347,11 @@ const TTSControl = () => {
     return '';
   };
 
+  /**
+   * handleSelectTimeout
+   *
+   * Sets a timeout for stopping the TTS playback.
+   */
   const handleSelectTimeout = (value: number) => {
     setTimeoutOption(value);
     if (timeoutFunc) {
@@ -275,6 +369,10 @@ const TTSControl = () => {
     }
   };
 
+  /**
+   * updatePanelPosition
+   * Updates the position of the TTS panel relative to the TTS icon.
+   */
   const updatePanelPosition = () => {
     if (iconRef.current) {
       const rect = iconRef.current.getBoundingClientRect();
@@ -298,11 +396,19 @@ const TTSControl = () => {
     }
   };
 
+  /**
+   * togglePopup
+   * Toggles the visibility of the TTS panel.
+   */
   const togglePopup = () => {
     updatePanelPosition();
     setShowPanel((prev) => !prev);
   };
 
+  /**
+   * handleDismissPopup
+   * Dismisses the TTS panel by setting its visibility to false.
+   */
   const handleDismissPopup = () => {
     setShowPanel(false);
   };
@@ -311,6 +417,7 @@ const TTSControl = () => {
     <div>
       {showPanel && (
         <div
+          // Overlay to dismiss the popup when clicked outside.
           className='fixed inset-0'
           onClick={handleDismissPopup}
           onContextMenu={handleDismissPopup}
@@ -318,6 +425,7 @@ const TTSControl = () => {
       )}
       {showIndicator && (
         <div
+          // TTS icon container.
           ref={iconRef}
           className={clsx(
             'fixed right-6 h-12 w-12',
@@ -330,6 +438,7 @@ const TTSControl = () => {
         </div>
       )}
       {showPanel && panelPosition && trianglePosition && (
+        // Popup container for the TTS panel.
         <Popup
           width={popupWidth}
           height={popupHeight}
@@ -337,6 +446,7 @@ const TTSControl = () => {
           trianglePosition={trianglePosition}
           className='bg-base-200 absolute flex shadow-lg'
         >
+          {/* TTS panel content */}
           <TTSPanel
             bookKey={bookKey}
             ttsLang={ttsLang}

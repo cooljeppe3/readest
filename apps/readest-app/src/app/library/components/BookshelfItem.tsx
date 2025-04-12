@@ -1,34 +1,52 @@
 import clsx from 'clsx';
 import { useRouter, useSearchParams } from 'next/navigation';
+// Import utility functions for navigation
 import { navigateToLibrary, navigateToReader } from '@/utils/nav';
+// Import context for environment variables
 import { useEnv } from '@/context/EnvContext';
+// Import store for library data
 import { useLibraryStore } from '@/store/libraryStore';
+// Import store for settings data
 import { useSettingsStore } from '@/store/settingsStore';
+// Import hook for translations
 import { useTranslation } from '@/hooks/useTranslation';
+// Import hook for handling long press gestures
 import { useLongPress } from '@/hooks/useLongPress';
+// Import components for context menus
 import { Menu, MenuItem } from '@tauri-apps/api/menu';
+// Import function for revealing file in directory
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
+// Import utility function for getting the OS platform
 import { getOSPlatform } from '@/utils/misc';
+// Import utility function for getting local book filename
 import { getLocalBookFilename } from '@/utils/book';
+// Import constants for ungrouped book handling
 import { BOOK_UNGROUPED_ID, BOOK_UNGROUPED_NAME } from '@/services/constants';
+// Import constants for file reveal labels
 import { FILE_REVEAL_LABELS, FILE_REVEAL_PLATFORMS } from '@/utils/os';
+// Import type definitions for book and book groups
 import { Book, BookGroupType, BooksGroup } from '@/types/book';
+// Import components for individual book and group items
 import BookItem from './BookItem';
 import GroupItem from './GroupItem';
 
+// Define type for items that can be displayed on the bookshelf
 export type BookshelfItem = Book | BooksGroup;
 
+// Function to generate bookshelf items from a list of books
 export const generateBookshelfItems = (books: Book[]): (Book | BooksGroup)[] => {
+  // Aggregate books into groups
   const groups: BooksGroup[] = books.reduce((acc: BooksGroup[], book: Book) => {
+    // Skip deleted books
     if (book.deletedAt) return acc;
     book.groupId = book.groupId || BOOK_UNGROUPED_ID;
     book.groupName = book.groupName || BOOK_UNGROUPED_NAME;
-    const groupIndex = acc.findIndex((group) => group.id === book.groupId);
     const booksGroup = acc[acc.findIndex((group) => group.id === book.groupId)];
     if (booksGroup) {
       booksGroup.books.push(book);
-      booksGroup.updatedAt = Math.max(acc[groupIndex]!.updatedAt, book.updatedAt);
+      booksGroup.updatedAt = Math.max(booksGroup.updatedAt, book.updatedAt);
     } else {
+      // Create a new group if it doesn't exist
       acc.push({
         id: book.groupId,
         name: book.groupName,
@@ -37,16 +55,19 @@ export const generateBookshelfItems = (books: Book[]): (Book | BooksGroup)[] => 
       });
     }
     return acc;
-  }, []);
+  }, [] as BooksGroup[]);
+  // Sort books within each group by update date
   groups.forEach((group) => {
     group.books.sort((a, b) => b.updatedAt - a.updatedAt);
   });
+  // Separate ungrouped books from grouped books
   const ungroupedBooks: Book[] =
     groups.find((group) => group.name === BOOK_UNGROUPED_NAME)?.books || [];
   const groupedBooks: BooksGroup[] = groups.filter((group) => group.name !== BOOK_UNGROUPED_NAME);
+  // Combine and sort all items by update date
   return [...ungroupedBooks, ...groupedBooks].sort((a, b) => b.updatedAt - a.updatedAt);
 };
-
+// Function to generate a list of groups from books
 export const generateGroupsList = (items: Book[]): BookGroupType[] => {
   return items
     .sort((a, b) => b.updatedAt - a.updatedAt)
@@ -65,6 +86,7 @@ export const generateGroupsList = (items: Book[]): BookGroupType[] => {
     }, []) as BookGroupType[];
 };
 
+// Interface for BookshelfItem component properties
 interface BookshelfItemProps {
   item: BookshelfItem;
   isSelectMode: boolean;
@@ -79,6 +101,7 @@ interface BookshelfItemProps {
   handleShowDetailsBook: (book: Book) => void;
 }
 
+// BookshelfItem component to display individual books or book groups
 const BookshelfItem: React.FC<BookshelfItemProps> = ({
   item,
   isSelectMode,
@@ -92,11 +115,13 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
   handleSetSelectMode,
   handleShowDetailsBook,
 }) => {
+  // Hook for translations
   const _ = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { envConfig, appService } = useEnv();
   const { settings } = useSettingsStore();
+  // Function to update a book's metadata
   const { updateBook } = useLibraryStore();
 
   const showBookDetailsModal = async (book: Book) => {
@@ -105,10 +130,12 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
     }
   };
 
+  // Function to make a book available locally (download if necessary)
   const makeBookAvailable = async (book: Book) => {
+    // If the book is uploaded but not downloaded, handle the download process
     if (book.uploadedAt && !book.downloadedAt) {
       let available = false;
-      const loadingTimeout = setTimeout(() => setLoading(true), 200);
+      const loadingTimeout = setTimeout(() => setLoading(true), 200); // Set loading state after a short delay
       try {
         available = await handleBookDownload(book);
         updateBook(envConfig, book);
@@ -121,6 +148,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
     return true;
   };
 
+  // Handle click on a book item
   const handleBookClick = async (book: Book) => {
     if (isSelectMode) {
       toggleSelection(book.hash);
@@ -130,6 +158,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
     }
   };
 
+  // Handle click on a book group item
   const handleGroupClick = (group: BooksGroup) => {
     if (isSelectMode) {
       toggleSelection(group.id);
@@ -140,10 +169,12 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
     }
   };
 
+  // Handler for book context menu
   const bookContextMenuHandler = async (book: Book) => {
     if (!appService?.hasContextMenu) return;
     const osPlatform = getOSPlatform();
     const fileRevealLabel =
+    // Define label for reveal in file explorer depending on OS
       FILE_REVEAL_LABELS[osPlatform as FILE_REVEAL_PLATFORMS] || FILE_REVEAL_LABELS.default;
     const selectBookMenuItem = await MenuItem.new({
       text: selectedBooks.includes(book.hash) ? _('Deselect Book') : _('Select Book'),
@@ -196,6 +227,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
     menu.append(deleteBookMenuItem);
     menu.popup();
   };
+    // Handler for group context menu
 
   const groupContextMenuHandler = async (group: BooksGroup) => {
     if (!appService?.hasContextMenu) return;
@@ -220,6 +252,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
     menu.popup();
   };
 
+  // Hook to handle long press and context menu interactions
   const { pressing, handlers } = useLongPress({
     onLongPress: async () => {
       if (!isSelectMode) {
@@ -247,14 +280,17 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
     },
   });
 
+  // Render the BookshelfItem
   return (
     <div
       className={clsx(
+        // Apply classes for styling and hover effects
         'sm:hover:bg-base-300/50 group flex h-full flex-col px-0 py-4 sm:px-4',
+        // Apply scale animation on press
         pressing ? 'scale-95' : 'scale-100',
       )}
       style={{
-        transition: 'transform 0.2s',
+        transition: 'transform 0.2s', // Smooth transition for scale effect
       }}
       {...handlers}
     >

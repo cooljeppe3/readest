@@ -1,47 +1,61 @@
 'use client';
 
+// Import necessary modules and hooks from external libraries and internal files.
 import clsx from 'clsx';
 import * as React from 'react';
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { ReadonlyURLSearchParams, useRouter, useSearchParams } from 'next/navigation';
 
+// Import custom types and utility functions.
 import { Book } from '@/types/book';
 import { AppService } from '@/types/system';
 import { navigateToLogin, navigateToReader } from '@/utils/nav';
 import { getFilename, listFormater } from '@/utils/book';
 import { eventDispatcher } from '@/utils/event';
-import { ProgressPayload } from '@/utils/transfer';
+import { ProgressPayload, TransferProgress } from '@/utils/transfer';
 import { throttle } from '@/utils/throttle';
 import { parseOpenWithFiles } from '@/helpers/cli';
 import { isTauriAppPlatform, hasUpdater } from '@/services/environment';
 import { checkForAppUpdates } from '@/helpers/updater';
 import { FILE_ACCEPT_FORMATS, SUPPORTED_FILE_EXTS } from '@/services/constants';
+// Import Tauri related features.
 import { impactFeedback } from '@tauri-apps/plugin-haptics';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
 
+// Import React Contexts and Stores.
 import { useEnv } from '@/context/EnvContext';
 import { useAuth } from '@/context/AuthContext';
 import { useThemeStore } from '@/store/themeStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useSettingsStore } from '@/store/settingsStore';
+
+// Import custom hooks.
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useTheme } from '@/hooks/useTheme';
 import { useDemoBooks } from './hooks/useDemoBooks';
 import { useBooksSync } from './hooks/useBooksSync';
 import { useScreenWakeLock } from '@/hooks/useScreenWakeLock';
 import { useOpenWithBooks } from '@/hooks/useOpenWithBooks';
+
+// Import utility functions for Tauri.
 import { tauriHandleSetAlwaysOnTop, tauriQuitApp } from '@/utils/window';
 
+// Import React components.
 import { AboutWindow } from '@/components/AboutWindow';
 import { Toast } from '@/components/Toast';
 import Spinner from '@/components/Spinner';
 import LibraryHeader from './components/LibraryHeader';
 import Bookshelf from './components/Bookshelf';
 import BookDetailModal from '@/components/BookDetailModal';
+// Import custom hooks.
 import useShortcuts from '@/hooks/useShortcuts';
 import DropIndicator from '@/components/DropIndicator';
 
+/**
+ * LibraryPageWithSearchParams: A functional component that wraps LibraryPageContent 
+ * and provides it with URL search parameters.
+ */
 const LibraryPageWithSearchParams = () => {
   const searchParams = useSearchParams();
   return <LibraryPageContent searchParams={searchParams} />;
@@ -49,24 +63,37 @@ const LibraryPageWithSearchParams = () => {
 
 const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchParams | null }) => {
   const router = useRouter();
+  // Access environment configuration and app service from context.
   const { envConfig, appService } = useEnv();
+  // Access authentication token and user information from context.
   const { token, user } = useAuth();
+  // Access and manage the library state from the library store.
   const {
     library: libraryBooks,
     updateBook,
     setLibrary,
     checkOpenWithBooks,
     setCheckOpenWithBooks,
-  } = useLibraryStore();
+  } = useLibraryStore();  
+  // Internationalization function.
   const _ = useTranslation();
+  // Apply the current theme.
   useTheme();
+  // Access and update the app theme.
   const { updateAppTheme } = useThemeStore();
+  // Access, update, and save settings from the settings store.
   const { settings, setSettings, saveSettings } = useSettingsStore();
+  // State for managing loading status.
   const [loading, setLoading] = useState(false);
+  // Ref to track if the initialization process is ongoing.
   const isInitiating = useRef(false);
+  // State to track if the library data has been loaded.
   const [libraryLoaded, setLibraryLoaded] = useState(false);
+  // State to manage the selection mode in the library view.
   const [isSelectMode, setIsSelectMode] = useState(false);
+  // State to hold the book details for showing the modal.
   const [showDetailsBook, setShowDetailsBook] = useState<Book | null>(null);
+  // State to track the transfer progress of books (upload/download).
   const [booksTransferProgress, setBooksTransferProgress] = useState<{
     [key: string]: number | null;
   }>({});
@@ -74,8 +101,10 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   const demoBooks = useDemoBooks();
   const containerRef = useRef<HTMLDivElement>(null);
   const pageRef = useRef<HTMLDivElement>(null);
-
+  
+  // Hook to handle "Open With" functionality for books.
   useOpenWithBooks();
+  // Custom hook for syncing books between local and remote storage.
 
   const { pullLibrary, pushLibrary } = useBooksSync({
     onSyncStart: () => setLoading(true),
@@ -84,6 +113,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
 
   usePullToRefresh(containerRef, pullLibrary);
   useScreenWakeLock(settings.screenWakeLock);
+  // Custom hook for setting up shortcuts.
 
   useShortcuts({
     onQuitApp: async () => {
@@ -93,11 +123,13 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     },
   });
 
+  // Effect to set the initial app theme.
   useEffect(() => {
     updateAppTheme('base-200');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Effect to check for app updates and handle settings changes.
   useEffect(() => {
     const doCheckAppUpdates = async () => {
       if (hasUpdater() && settings.autoCheckUpdates) {
@@ -111,6 +143,10 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings]);
 
+  /**
+   * Handles dropped files by checking their formats and importing them.
+   * @param files - An array of File objects or file paths.
+   */
   const handleDropedFiles = async (files: File[] | string[]) => {
     if (files.length === 0) return;
     const supportedFiles = files.filter((file) => {
@@ -139,6 +175,11 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     await importBooks(supportedFiles);
   };
 
+  /**
+   * Handles the drag over event to visually indicate the drop zone.
+   * @param event - The drag event.
+   * @returns void
+   */
   const handleDragOver = (event: React.DragEvent<HTMLDivElement> | DragEvent) => {
     event.preventDefault();
     event.stopPropagation();
@@ -151,6 +192,10 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     setIsDragging(false);
   };
 
+  /**
+   * Handles the drop event, processes files, and imports them.
+   * @param event - The drag event.
+   */
   const handleDrop = async (event: React.DragEvent<HTMLDivElement> | DragEvent) => {
     event.preventDefault();
     event.stopPropagation();
@@ -162,6 +207,10 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     }
   };
 
+    /**
+   * Handles drag and drop events for files, both in-browser and through Tauri.
+   * Also cleans up event listeners on component unmount.
+   */
   useEffect(() => {
     const libraryPage = document.querySelector('.library-page');
     if (!appService?.isMobile) {
@@ -196,6 +245,12 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageRef.current]);
 
+      /**
+   * Processes files passed to the app through "Open With" functionality.
+   * @param appService - The application service.
+   * @param openWithFiles - Array of file paths to open.
+   * @param libraryBooks - Current books in the library.
+   */
   const processOpenWithFiles = React.useCallback(
     async (appService: AppService, openWithFiles: string[], libraryBooks: Book[]) => {
       const settings = await appService.loadSettings();
@@ -226,6 +281,10 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     [],
   );
 
+  /**
+   * Initializes the library by fetching settings and books, handling login,
+   * and processing "Open With" files if applicable.
+   */
   useEffect(() => {
     if (isInitiating.current) return;
     isInitiating.current = true;
@@ -283,6 +342,10 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
+  /**
+   * Adds or updates demo books in the library once it's loaded.
+   * Uses the `demoBooks` and `libraryLoaded` state to perform updates.
+   */
   useEffect(() => {
     if (demoBooks.length > 0 && libraryLoaded) {
       const newLibrary = [...libraryBooks];
@@ -300,6 +363,10 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [demoBooks, libraryLoaded]);
 
+    /**
+   * Imports books from a list of file paths or File objects, handles errors, and updates the library.
+   * @param files - An array of file paths or File objects.
+   */
   const importBooks = async (files: (string | File)[]) => {
     setLoading(true);
     const failedFiles = [];
@@ -338,6 +405,10 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     setLoading(false);
   };
 
+    /**
+   * Selects multiple files in Tauri apps (desktop/mobile).
+   * @returns An array of selected file paths.
+   */
   const selectFilesTauri = async () => {
     const exts = appService?.isAndroidApp ? [] : SUPPORTED_FILE_EXTS;
     const files = (await appService?.selectFiles(_('Select Books'), exts)) || [];
@@ -345,6 +416,10 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     return files;
   };
 
+  /**
+   * Selects multiple files in web browsers.
+   * @returns A Promise resolving to the selected files.
+   */
   const selectFilesWeb = () => {
     return new Promise((resolve) => {
       const fileInput = document.createElement('input');
@@ -359,6 +434,12 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     });
   };
 
+    /**
+   * Updates the transfer progress for a book.
+   * Throttles updates to avoid excessive UI redraws.
+   * @param bookHash - The hash of the book.
+   * @param progress - The progress information.
+   */
   const updateBookTransferProgress = throttle((bookHash: string, progress: ProgressPayload) => {
     if (progress.total === 0) return;
     const progressPct = (progress.progress / progress.total) * 100;
@@ -368,6 +449,11 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     }));
   }, 500);
 
+    /**
+   * Uploads a book to remote storage.
+   * Handles progress updates, success, and various error scenarios.
+   * @param book - The book to upload.
+   */
   const handleBookUpload = async (book: Book) => {
     try {
       await appService?.uploadBook(book, (progress) => {
@@ -408,6 +494,11 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     }
   };
 
+    /**
+   * Downloads a book from remote storage.
+   * Handles progress updates, success, and error scenarios.
+   * @param book - The book to download.
+   */
   const handleBookDownload = async (book: Book) => {
     try {
       await appService?.downloadBook(book, false, (progress) => {
@@ -433,6 +524,11 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     }
   };
 
+   /**
+   * Deletes a book from local and potentially remote storage.
+   * Handles success and error scenarios.
+   * @param book - The book to delete.
+   */
   const handleBookDelete = async (book: Book) => {
     try {
       await appService?.deleteBook(book, !!book.uploadedAt);
@@ -457,6 +553,10 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     }
   };
 
+   /**
+   * Initiates the import of books by selecting files using the appropriate method
+   * based on the platform (Tauri or web).
+   */
   const handleImportBooks = async () => {
     setIsSelectMode(false);
     console.log('Importing books...');
@@ -474,6 +574,10 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     importBooks(files);
   };
 
+  /**
+   * Toggles the selection mode (enables/disables selecting multiple books).
+   * Provides haptic feedback if supported.
+   */
   const handleToggleSelectMode = () => {
     if (!isSelectMode && appService?.hasHaptics) {
       impactFeedback('medium');
@@ -481,6 +585,11 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     setIsSelectMode((pre) => !pre);
   };
 
+  /**
+   * Sets the selection mode (enables/disables selecting multiple books) directly.
+   * Provides haptic feedback if supported when entering selection mode.
+   * @param selectMode - The mode to set.
+   */
   const handleSetSelectMode = (selectMode: boolean) => {
     if (selectMode && appService?.hasHaptics) {
       impactFeedback('medium');
@@ -488,6 +597,10 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     setIsSelectMode(selectMode);
   };
 
+  /**
+   * Displays the details of a book in a modal.
+   * @param book - The book to display.
+   */
   const handleShowDetailsBook = (book: Book) => {
     setShowDetailsBook(book);
   };
@@ -495,6 +608,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   if (!appService) {
     return null;
   }
+  // Displays a loading indicator if checking for Open With files.
 
   if (checkOpenWithBooks) {
     return (
@@ -505,6 +619,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
       )
     );
   }
+  // The main layout and content of the library page.
 
   return (
     <div
@@ -515,6 +630,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
         appService?.hasRoundedWindow && 'rounded-window',
       )}
     >
+      {/* Library header with import button and selection mode toggle. */}
       <div className='fixed top-0 z-40 w-full'>
         <LibraryHeader
           isSelectMode={isSelectMode}
@@ -522,12 +638,14 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
           onToggleSelectMode={handleToggleSelectMode}
         />
       </div>
+       {/* Loading indicator if the library is loading. */}
       {loading && (
         <div className='fixed inset-0 z-50 flex items-center justify-center'>
           <Spinner loading />
         </div>
       )}
-      {libraryLoaded &&
+      {/* Main library content or empty state. */}
+      {libraryLoaded && (
         (libraryBooks.some((book) => !book.deletedAt) ? (
           <div
             ref={containerRef}
@@ -569,6 +687,8 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
             </div>
           </div>
         ))}
+      )
+      }
       {showDetailsBook && (
         <BookDetailModal
           isOpen={!!showDetailsBook}
@@ -582,6 +702,10 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   );
 };
 
+/**
+ * LibraryPage: A functional component that serves as the main entry point for the library page.
+ * It wraps LibraryPageWithSearchParams with a Suspense boundary for better loading handling.
+ */
 const LibraryPage = () => {
   return (
     <Suspense
@@ -596,4 +720,5 @@ const LibraryPage = () => {
   );
 };
 
+// Export the LibraryPage component as the default export of this module.
 export default LibraryPage;

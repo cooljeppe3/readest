@@ -1,38 +1,50 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Position } from '@/utils/sel';
 import Popup from '@/components/Popup';
-
+// Define the type for a definition, which can include a definition string and optional examples.
 type Definition = {
   definition: string;
   examples?: string[];
 };
 
+// Define the type for a result, which includes the part of speech, definitions, and language.
 type Result = {
   partOfSpeech: string;
   definitions: Definition[];
   language: string;
 };
 
+// Define the props interface for the WiktionaryPopup component.
 interface WiktionaryPopupProps {
+  // The word to lookup in Wiktionary.
   word: string;
+  // Optional language code to filter definitions by language.
   lang?: string;
+  // The position of the popup on the screen.
   position: Position;
+  // The position of the triangle that points to the selected text.
   trianglePosition: Position;
+  // The width of the popup.
   popupWidth: number;
+  // The height of the popup.
   popupHeight: number;
 }
 
+// WiktionaryPopup component: Displays definitions fetched from Wiktionary.
 const WiktionaryPopup: React.FC<WiktionaryPopupProps> = ({
   word,
   lang,
   position,
   trianglePosition,
   popupWidth,
-  popupHeight,
+  popupHeight
 }) => {
+  // State to keep track of the word being looked up.
   const [lookupWord, setLookupWord] = useState(word);
+  // Ref to determine if a lookup is in progress, preventing multiple fetches.
   const isLookingUp = useRef(false);
 
+  // Intercepts dictionary links and attaches an event listener to handle navigation.
   const interceptDictLinks = (definition: string): HTMLElement[] => {
     const container = document.createElement('div');
     container.innerHTML = definition;
@@ -55,17 +67,23 @@ const WiktionaryPopup: React.FC<WiktionaryPopupProps> = ({
     return Array.from(container.childNodes) as HTMLElement[];
   };
 
+  // Effect hook to fetch and display definitions.
   useEffect(() => {
+    // If a lookup is already in progress, don't initiate a new one.
     if (isLookingUp.current) {
       return;
     }
+    // Mark that a lookup is now in progress.
     isLookingUp.current = true;
+    // Get references to the main and footer elements of the popup.
     const main = document.querySelector('main') as HTMLElement;
     const footer = document.querySelector('footer') as HTMLElement;
 
+    // Function to fetch definitions for a given word and language.
     const fetchDefinitions = async (word: string, language?: string) => {
+      // Clear previous content and set the loading state.
       main.innerHTML = '';
-      footer.dataset['state'] = 'loading';
+      footer.dataset.state = 'loading';
 
       try {
         const response = await fetch(
@@ -75,6 +93,7 @@ const WiktionaryPopup: React.FC<WiktionaryPopupProps> = ({
           throw new Error('Failed to fetch definitions');
         }
 
+        // Parse the JSON response and extract definitions.
         const json = await response.json();
         const results: Result[] | undefined = language
           ? json[language] || json['en']
@@ -84,6 +103,7 @@ const WiktionaryPopup: React.FC<WiktionaryPopupProps> = ({
           throw new Error('No results found');
         }
 
+        // Create and append the word header and language information.
         const hgroup = document.createElement('hgroup');
         const h1 = document.createElement('h1');
         h1.innerText = word;
@@ -95,6 +115,7 @@ const WiktionaryPopup: React.FC<WiktionaryPopupProps> = ({
         hgroup.append(h1, p);
         main.append(hgroup);
 
+        // Process and display each definition.
         results.forEach(({ partOfSpeech, definitions }: Result) => {
           const h2 = document.createElement('h2');
           h2.innerText = partOfSpeech;
@@ -129,11 +150,12 @@ const WiktionaryPopup: React.FC<WiktionaryPopupProps> = ({
           main.appendChild(ol);
         });
 
-        footer.dataset['state'] = 'loaded';
+        footer.dataset.state = 'loaded';
       } catch (error) {
         console.error(error);
-        footer.dataset['state'] = 'error';
-
+        // Handle errors and display an error message.
+        footer.dataset.state = 'error';
+        
         const div = document.createElement('div');
         div.className =
           'flex flex-col items-center justify-center w-full h-full text-center absolute inset-0';
@@ -152,10 +174,13 @@ const WiktionaryPopup: React.FC<WiktionaryPopupProps> = ({
       }
     };
 
+    // Determine the language code to use for fetching definitions.
     const langCode = typeof lang === 'string' ? lang : lang?.[0];
+    // Call the fetchDefinitions function to start the process.
     fetchDefinitions(lookupWord, langCode);
   }, [lookupWord, lang]);
 
+  // Render the WiktionaryPopup component.
   return (
     <div>
       <Popup
@@ -166,6 +191,7 @@ const WiktionaryPopup: React.FC<WiktionaryPopupProps> = ({
         className='select-text'
       >
         <div className='flex h-full flex-col'>
+          {/* Main area to display the definitions. */}
           <main className='flex-grow overflow-y-auto p-4 font-sans' />
           <footer className='mt-auto hidden data-[state=loaded]:block data-[state=error]:hidden data-[state=loading]:hidden'>
             <div className='flex items-center px-4 py-2 text-sm opacity-60'>

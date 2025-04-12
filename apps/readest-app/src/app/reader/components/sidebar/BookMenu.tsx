@@ -1,30 +1,41 @@
+// Import necessary modules and components
 import clsx from 'clsx';
 import React from 'react';
 import Image from 'next/image';
 
+// Import custom components and utilities
 import MenuItem from '@/components/MenuItem';
 import { setAboutDialogVisible } from '@/components/AboutWindow';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { isWebAppPlatform } from '@/services/environment';
-import { eventDispatcher } from '@/utils/event';
+import { eventDispatcher } from '@/utils/event'; // Utility for dispatching custom events
 import { DOWNLOAD_READEST_URL } from '@/services/constants';
 import useBooksManager from '../../hooks/useBooksManager';
 
+// Define the interface for BookMenu component props
 interface BookMenuProps {
-  menuClassName?: string;
-  setIsDropdownOpen?: (isOpen: boolean) => void;
+  menuClassName?: string; // Optional CSS class name for the menu
+  setIsDropdownOpen?: (isOpen: boolean) => void; // Optional function to set the dropdown open state
 }
 
+// Define the BookMenu functional component
 const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen }) => {
-  const _ = useTranslation();
-  const { getVisibleLibrary } = useLibraryStore();
-  const { openParallelView } = useBooksManager();
-  const { sideBarBookKey } = useSidebarStore();
+  // Get translation function from useTranslation hook
+  const _ = useTranslation(); 
+  // Get visible library function from useLibraryStore hook
+  const { getVisibleLibrary } = useLibraryStore(); 
+  // Get openParallelView function from useBooksManager hook
+  const { openParallelView } = useBooksManager(); 
+  // Get the current book key from useSidebarStore hook
+  const { sideBarBookKey } = useSidebarStore(); 
 
+  // Function to handle opening parallel view for a book
   const handleParallelView = (id: string) => {
+    // Open the parallel view with the given book ID
     openParallelView(id);
+    // Close the dropdown menu
     setIsDropdownOpen?.(false);
   };
   const handleReloadPage = () => {
@@ -39,18 +50,22 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
     window.open(DOWNLOAD_READEST_URL, '_blank');
     setIsDropdownOpen?.(false);
   };
+  // Handle exporting annotations for current book
   const handleExportAnnotations = () => {
+    // Dispatch an event to export annotations with the current book key
     eventDispatcher.dispatch('export-annotations', { bookKey: sideBarBookKey });
+    // Close the dropdown menu
     setIsDropdownOpen?.(false);
   };
 
-  const isWebApp = isWebAppPlatform();
+  const isWebApp = isWebAppPlatform(); // Check if the platform is a web app
 
   return (
+    // Main container for the book menu
     <div
       tabIndex={0}
       className={clsx(
-        'book-menu dropdown-content border-base-100 z-20 w-60 shadow-2xl',
+        'book-menu dropdown-content border-base-100 z-20 w-60 shadow-2xl', // Base styles for the dropdown menu
         menuClassName,
       )}
     >
@@ -81,13 +96,17 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
             ))}
         </ul>
       </MenuItem>
+      {/* Menu item for exporting annotations */}
       <MenuItem label={_('Export Annotations')} noIcon onClick={handleExportAnnotations} />
+      {/* Menu item for reloading the page */}
       <MenuItem label={_('Reload Page')} noIcon shortcut='Shift+R' onClick={handleReloadPage} />
       <hr className='border-base-200 my-1' />
+      {/* Conditionally render the download Readest menu item */}
       {isWebApp && <MenuItem label={_('Download Readest')} noIcon onClick={downloadReadest} />}
+      {/* Menu item for showing the about dialog */}
       <MenuItem label={_('About Readest')} noIcon onClick={showAboutReadest} />
     </div>
   );
 };
-
+// Export the BookMenu component
 export default BookMenu;

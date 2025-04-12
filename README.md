@@ -1,35 +1,59 @@
+<!-- This is the main README file for the Readest project. -->
 <div align="center">
+  <!-- Link to the Readest website with UTM parameters for tracking. -->
   <a href="https://readest.com?utm_source=github&utm_medium=referral&utm_campaign=readme" target="_blank">
+    <!-- Readest Logo -->
     <img src="https://github.com/readest/readest/blob/main/apps/readest-app/src-tauri/icons/icon.png?raw=true" alt="Readest Logo" width="20%" />
   </a>
+  <!-- Project Title -->
   <h1>Readest</h1>
   <br>
 
+<!-- Project Description -->
 [Readest][link-website] is an open-source ebook reader designed for immersive and deep reading experiences. Built as a modern rewrite of [Foliate](https://github.com/johnfactotum/foliate), it leverages [Next.js 15](https://github.com/vercel/next.js) and [Tauri v2](https://github.com/tauri-apps/tauri) to deliver a smooth, cross-platform experience across macOS, Windows, Linux, Android, iOS, and the Web.
 
+<!-- Badges Section -->
+<!-- Website Badge -->
 [![Website][badge-website]][link-website]
+<!-- Web App Badge -->
 [![Web App][badge-web-app]][link-web-readest]
+<!-- OS Badge -->
 [![OS][badge-platforms]][link-website]
 <br>
+<!-- Hello Github Badge -->
 [![][badge-hellogithub]][link-hellogithub]
+<!-- Discord Badge -->
 [![][badge-discord]][link-discord]
+<!-- AGPL Licence Badge -->
 [![AGPL Licence][badge-license]](LICENSE)
+<!-- Latest release Badge -->
 [![Latest release][badge-release]][link-gh-releases]
+<!-- Last commit Badge -->
 [![Last commit][badge-last-commit]][link-gh-commits]
+<!-- Commits Badge -->
 [![Commits][badge-commit-activity]][link-gh-pulse]
 
 </div>
 
+<!-- Navigation Links -->
 <p align="center">
+  <!-- Link to Features Section -->
   <a href="#features">Features</a> •
+  <!-- Link to Planned Features Section -->
   <a href="#planned-features">Planned Features</a> •
+  <!-- Link to Screenshots Section -->
   <a href="#screenshots">Screenshots</a> •
+  <!-- Link to Downloads Section -->
   <a href="#downloads">Downloads</a> •
+  <!-- Link to Getting Started Section -->
   <a href="#getting-started">Getting Started</a> •
+  <!-- Link to Troubleshooting Section -->
   <a href="#troubleshooting">Troubleshooting</a> •
+  <!-- Link to License Section -->
   <a href="#license">License</a>
 </p>
 
+<!-- Readest Banner -->
 <div align="center">
   <a href="https://readest.com" target="_blank">
     <img src="./data/screenshots/landing_all_platforms.png" alt="Readest Banner" width="100%" />
@@ -37,8 +61,10 @@
 </div>
 
 ## Features
+<!-- Section to describe the implemented features -->
 
 <div align="left">✅ Implemented</div>
+<!-- Table of features -->
 
 | **Feature**                             | **Description**                                                                                | **Status** |
 | --------------------------------------- | ---------------------------------------------------------------------------------------------- | ---------- |
@@ -56,10 +82,13 @@
 | **Text-to-Speech (TTS) Support**        | Enable text-to-speech functionality for a more accessible reading experience.                  | ✅         |
 
 ## Planned Features
+<!-- Section to describe the planned features -->
 
+<!-- Status Indicators -->
 <div align="left">🛠 Building</div>
 <div align="left">🔄 Planned</div>
 
+<!-- Table of planned features -->
 | **Feature**                     | **Description**                                                                            | **Priority** |
 | ------------------------------- | ------------------------------------------------------------------------------------------ | ------------ |
 | **Library Management**          | Organize, sort, and manage your entire ebook library.                                      | 🛠           |
@@ -73,6 +102,7 @@
 | **In-Library Full-Text Search** | Search across your entire ebook library to find topics and quotes.                         | 🔄           |
 
 Stay tuned for continuous improvements and updates! Contributions and suggestions are always welcome—let's build the ultimate reading experience together. 😊
+<!-- End of Planned Features Section -->
 
 ## Screenshots
 
@@ -91,6 +121,7 @@ Stay tuned for continuous improvements and updates! Contributions and suggestion
 ---
 
 ## Downloads
+<!-- Section for downloads and platforms information -->
 
 The Readest app is available for download! 🥳 🚀
 
@@ -100,6 +131,7 @@ The Readest app is available for download! 🥳 🚀
 
 ## Requirements
 
+<!-- Section for dependencies -->
 - **Node.js** and **pnpm** for Next.js development
 - **Rust** and **Cargo** for Tauri development
 

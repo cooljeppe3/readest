@@ -6,6 +6,13 @@ import { eventDispatcher } from '@/utils/event';
 import { isTauriAppPlatform } from '@/services/environment';
 import { tauriGetWindowLogicalPosition } from '@/utils/window';
 
+/**
+ * Custom hook for handling click events within an iframe.
+ * It manages page turns, toggling the visibility of header/footer bars,
+ * and handling wheel events for page navigation.
+ * @param bookKey - The unique key of the book.
+ * @param viewRef - Ref to the FoliateView instance.
+ * @param containerRef - Ref to the HTML container element.
 export const useClickEvent = (
   bookKey: string,
   viewRef: React.MutableRefObject<FoliateView | null>,
@@ -14,6 +21,14 @@ export const useClickEvent = (
   const { appService } = useEnv();
   const { getViewSettings } = useReaderStore();
   const { hoveredBookKey, setHoveredBookKey } = useReaderStore();
+
+  /**
+   * Handles page turn events based on clicks or messages received from the iframe.
+   * @param msg - Can be either a MessageEvent (from the iframe) or a React.MouseEvent (from a direct click).
+   *
+   * This function determines the action based on the click position (left, center, right) and
+   * whether the settings allow click interactions. It also handles wheel events for page turning.
+   */
   const handleTurnPage = async (
     msg: MessageEvent | React.MouseEvent<HTMLDivElement, MouseEvent>,
   ) => {
@@ -21,6 +36,7 @@ export const useClickEvent = (
       if (msg.data && msg.data.bookKey === bookKey) {
         const viewSettings = getViewSettings(bookKey)!;
         if (msg.data.type === 'iframe-single-click') {
+          // Handle single click events
           const viewElement = containerRef.current;
           if (viewElement) {
             const { screenX } = msg.data;
@@ -37,6 +53,8 @@ export const useClickEvent = (
             } else {
               windowStartX = window.screenX;
             }
+
+            // Calculate view start and center
             const viewStartX = windowStartX + viewRect.left;
             const viewCenterX = viewStartX + viewRect.width / 2;
             const consumed = eventDispatcher.dispatchSync('iframe-single-click');
@@ -47,6 +65,7 @@ export const useClickEvent = (
                 viewSettings.disableClick! ||
                 (screenX >= centerStartX && screenX <= centerEndX)
               ) {
+                // If click is in the center or click is disabled, toggle visibility of header and footer
                 // toggle visibility of the header bar and the footer bar
                 setHoveredBookKey(hoveredBookKey ? null : bookKey);
               } else {
@@ -54,6 +73,7 @@ export const useClickEvent = (
                   setHoveredBookKey(null);
                 }
                 if (!viewSettings.disableClick! && screenX >= viewCenterX) {
+                  // Go left or right depending on settings and click position
                   if (viewSettings.swapClickArea) {
                     viewRef.current?.goLeft();
                   } else {
@@ -69,12 +89,14 @@ export const useClickEvent = (
               }
             }
           }
-        } else if (msg.data.type === 'iframe-wheel' && !viewSettings.scrolled) {
+        } else if (msg.data.type === 'iframe-wheel' && !viewSettings.scrolled) { // Handle wheel event
           // The wheel event is handled by the iframe itself in scrolled mode.
           const { deltaY } = msg.data;
           if (deltaY > 0) {
+            // Scroll down, go to next page
             viewRef.current?.next(1);
           } else if (deltaY < 0) {
+            // Scroll up, go to previous page
             viewRef.current?.prev(1);
           }
         } else if (msg.data.type === 'iframe-mouseup') {
@@ -98,6 +120,7 @@ export const useClickEvent = (
     }
   };
 
+  // Add event listener for messages from the iframe or clicks, and cleanup on unmount
   useEffect(() => {
     window.addEventListener('message', handleTurnPage);
     return () => {
@@ -106,6 +129,7 @@ export const useClickEvent = (
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hoveredBookKey, viewRef]);
 
+  // Return the handleTurnPage function for use in components
   return {
     handleTurnPage,
   };
@@ -122,6 +146,13 @@ interface IframeTouchEvent {
   targetTouches: IframeTouch[];
 }
 
+/**
+ * Custom hook for handling touch events within an iframe.
+ * It manages swipe gestures for page turning and toggling the visibility of header/footer bars.
+ * @param bookKey - The unique key of the book.
+ * @param viewRef - Ref to the FoliateView instance.
+ *
+ */
 export const useTouchEvent = (
   bookKey: string,
   viewRef: React.MutableRefObject<FoliateView | null>,
@@ -132,6 +163,7 @@ export const useTouchEvent = (
   let touchStart: IframeTouch | null = null;
   let touchEnd: IframeTouch | null = null;
 
+  // Record the start touch coordinates
   const onTouchStart = (e: IframeTouchEvent) => {
     touchEnd = null;
     const touch = e.targetTouches[0];
@@ -139,6 +171,7 @@ export const useTouchEvent = (
     touchStart = touch;
   };
 
+  // Record the move touch coordinates
   const onTouchMove = (e: IframeTouchEvent) => {
     if (!touchStart) return;
     const touch = e.targetTouches[0];
@@ -158,6 +191,7 @@ export const useTouchEvent = (
     }
   };
 
+  // Handle the touch end and make decisions based on the touch start and end coordinates
   const onTouchEnd = (e: IframeTouchEvent) => {
     if (!touchStart) return;
 
@@ -191,6 +225,7 @@ export const useTouchEvent = (
     touchEnd = null;
   };
 
+  // Process the message from the iframe to start, move or end touch
   const handleTouch = (msg: MessageEvent) => {
     if (msg.data && msg.data.bookKey === bookKey) {
       if (msg.data.type === 'iframe-touchstart') {
@@ -203,6 +238,7 @@ export const useTouchEvent = (
     }
   };
 
+  // Add event listener for messages from the iframe and cleanup on unmount
   useEffect(() => {
     window.addEventListener('message', handleTouch);
     return () => {

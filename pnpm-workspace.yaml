@@ -1,3 +1,8 @@
+# This file defines the workspace for the pnpm package manager.
+# It specifies which directories should be considered as packages within the workspace.
+
 packages:
+  # This line specifies that all directories within the 'apps' directory should be treated as packages.
   - 'apps/*'
+  # This line specifies that the 'packages/foliate-js' directory should also be treated as a package.
   - 'packages/foliate-js'

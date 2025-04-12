@@ -19,26 +19,40 @@ import useSidebar from '../../hooks/useSidebar';
 import SearchBar from './SearchBar';
 import SearchResults from './SearchResults';
 import useShortcuts from '@/hooks/useShortcuts';
-
+// Minimum width for the sidebar (5% of the screen width).
 const MIN_SIDEBAR_WIDTH = 0.05;
+// Maximum width for the sidebar (45% of the screen width).
 const MAX_SIDEBAR_WIDTH = 0.45;
 
+// Velocity threshold to determine if a vertical drag is a swipe to close.
 const VELOCITY_THRESHOLD = 0.5;
 
+// Functional component for the sidebar.
 const SideBar: React.FC<{
   onGoToLibrary: () => void;
 }> = ({ onGoToLibrary }) => {
+  // Access environment variables and services.
   const { appService } = useEnv();
+  // Access theme store to update the app theme.
   const { updateAppTheme } = useThemeStore();
+  // Access settings store for global reading settings.
   const { settings } = useSettingsStore();
+  // Access sidebar store for sidebar state management.
   const { sideBarBookKey } = useSidebarStore();
+  // Access book data store to get book details.
   const { getBookData } = useBookDataStore();
+  // Access reader store to manage the reader view.
   const { getView, getViewSettings } = useReaderStore();
+  // State to manage the search bar visibility.
   const [isSearchBarVisible, setIsSearchBarVisible] = useState(false);
+  // State to store search results.
   const [searchResults, setSearchResults] = useState<BookSearchResult[] | null>(null);
+  // State to store the current search term.
   const [searchTerm, setSearchTerm] = useState('');
+  // Check if the window width is for mobile.
   const isMobile = window.innerWidth < 640;
   const {
+    // sidebar state and actions
     sideBarWidth,
     isSideBarPinned,
     isSideBarVisible,
@@ -50,6 +64,7 @@ const SideBar: React.FC<{
     isMobile ? false : settings.globalReadSettings.isSideBarPinned,
   );
 
+  // Event handler for the 'search' event.
   const onSearchEvent = async (event: CustomEvent) => {
     const { term } = event.detail;
     setSideBarVisible(true);
@@ -57,6 +72,7 @@ const SideBar: React.FC<{
     setSearchTerm(term);
   };
 
+  // Event handler for the 'navigate' event.
   const onNavigateEvent = async () => {
     const pinButton = document.querySelector('.sidebar-pin-btn');
     const isPinButtonHidden = !pinButton || window.getComputedStyle(pinButton).display === 'none';
@@ -65,6 +81,7 @@ const SideBar: React.FC<{
     }
   };
 
+  // Update the app theme based on the sidebar's visibility.
   useEffect(() => {
     if (isSideBarVisible) {
       updateAppTheme('base-200');
@@ -73,6 +90,7 @@ const SideBar: React.FC<{
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSideBarVisible]);
+  // Listen for 'search' and 'navigate' events.
 
   useEffect(() => {
     eventDispatcher.on('search', onSearchEvent);
@@ -84,6 +102,7 @@ const SideBar: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Handle the vertical drag movement (mobile only).
   const handleVerticalDragMove = (data: { clientY: number }) => {
     if (!isMobile) return;
 
@@ -99,6 +118,7 @@ const SideBar: React.FC<{
     }
   };
 
+  // Handle the vertical drag end (mobile only).
   const handleVerticalDragEnd = (data: { velocity: number; clientY: number }) => {
     const sidebar = document.querySelector('.sidebar-container') as HTMLElement;
     const overlay = document.querySelector('.overlay') as HTMLElement;
@@ -129,11 +149,13 @@ const SideBar: React.FC<{
     }
   };
 
+  // Handle the horizontal drag movement.
   const handleHorizontalDragMove = (data: { clientX: number }) => {
     const widthFraction = data.clientX / window.innerWidth;
     const newWidth = Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, widthFraction));
     handleSideBarResize(`${Math.round(newWidth * 10000) / 100}%`);
   };
+  // Create drag handlers.
 
   const { handleDragStart: handleVerticalDragStart } = useDrag(
     handleVerticalDragMove,
@@ -142,10 +164,12 @@ const SideBar: React.FC<{
   const { handleDragStart: handleHorizontalDragStart } = useDrag(handleHorizontalDragMove);
 
   const handleClickOverlay = () => {
+    // Close the sidebar on overlay click.
     setSideBarVisible(false);
   };
 
   const handleToggleSearchBar = () => {
+    // Toggle the search bar visibility and reset search results.
     setIsSearchBarVisible((prev) => !prev);
     if (isSearchBarVisible) {
       setSearchResults(null);
@@ -154,16 +178,20 @@ const SideBar: React.FC<{
     }
   };
 
+  // Define shortcuts.
   useShortcuts({ onToggleSearchBar: handleToggleSearchBar }, [sideBarBookKey]);
 
+  // Handle search result click.
   const handleSearchResultClick = (cfi: string) => {
     onNavigateEvent();
     getView(sideBarBookKey)?.goTo(cfi);
   };
 
+  // Exit if the sidebar is not active.
   if (!sideBarBookKey) return null;
-
+  // Get view and book data.
   const viewSettings = getViewSettings(sideBarBookKey);
+  // Get book data.
   const bookData = getBookData(sideBarBookKey);
   if (!bookData || !bookData.book || !bookData.bookDoc) {
     return null;
@@ -171,6 +199,7 @@ const SideBar: React.FC<{
   const { book, bookDoc } = bookData;
   const languageDir = getBookDirFromLanguage(bookDoc.metadata.language);
 
+  // Render the sidebar.
   return isSideBarVisible ? (
     <>
       <div
@@ -214,6 +243,7 @@ const SideBar: React.FC<{
               <div className='bg-base-content/50 h-1 w-10 rounded-full'></div>
             </div>
           )}
+          {/* Render the sidebar header */}
           <SidebarHeader
             isPinned={isSideBarPinned}
             isSearchBarVisible={isSearchBarVisible}
@@ -222,6 +252,7 @@ const SideBar: React.FC<{
             onTogglePin={handleSideBarTogglePin}
             onToggleSearchBar={handleToggleSearchBar}
           />
+          {/* Render the search bar. */}
           <div
             className={clsx('search-bar', {
               'search-bar-visible': isSearchBarVisible,
@@ -235,6 +266,7 @@ const SideBar: React.FC<{
             />
           </div>
           <div className='border-base-300/50 border-b px-3'>
+            {/* Display the book card */}
             <BookCard book={book} />
           </div>
         </div>
@@ -245,11 +277,13 @@ const SideBar: React.FC<{
             onSelectResult={handleSearchResultClick}
           />
         ) : (
+          // Render the main content of the sidebar
           <SidebarContent bookDoc={bookDoc} sideBarBookKey={sideBarBookKey!} />
         )}
         <div
           className='drag-bar absolute right-0 top-0 h-full w-0.5 cursor-col-resize'
           onMouseDown={handleHorizontalDragStart}
+          // Render the horizontal drag bar.
         ></div>
       </div>
       {!isSideBarPinned && (

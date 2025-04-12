@@ -1,26 +1,35 @@
 'use client';
+
+// Import necessary libraries and hooks.
 import clsx from 'clsx';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+// Import Supabase authentication UI components and styles.
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
+// Import icons from react-icons library.
 import { FcGoogle } from 'react-icons/fc';
 import { FaApple } from 'react-icons/fa';
 import { FaGithub } from 'react-icons/fa';
 import { IoArrowBack } from 'react-icons/io5';
 
+// Import custom hooks and utils.
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/utils/supabase';
 import { useEnv } from '@/context/EnvContext';
 import { useThemeStore } from '@/store/themeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useTranslation } from '@/hooks/useTranslation';
+// Import store for the traffic light.
 import { useTrafficLightStore } from '@/store/trafficLightStore';
+// Import a function to check the running platform.
 import { isTauriAppPlatform } from '@/services/environment';
+// Import tauri plugins for deep link and oauth.
 import { onOpenUrl } from '@tauri-apps/plugin-deep-link';
 import { start, cancel, onUrl, onInvalidUrl } from '@fabianlars/tauri-plugin-oauth';
 import { openUrl } from '@tauri-apps/plugin-opener';
+// Import a function to manage the auth callback.
 import { handleAuthCallback } from '@/helpers/auth';
 import { getAppleIdAuth, Scope } from './utils/appleIdAuth';
 import { authWithCustomTab, authWithSafari } from './utils/nativeAuth';
@@ -41,6 +50,7 @@ interface ProviderLoginProp {
   label: string;
 }
 
+// Define constants for the web auth callback and deeplink callback.
 const WEB_AUTH_CALLBACK = `${READEST_WEB_BASE_URL}/auth/callback`;
 const DEEPLINK_CALLBACK = 'readest://auth-callback';
 
@@ -59,26 +69,34 @@ const ProviderLogin: React.FC<ProviderLoginProp> = ({ provider, handleSignIn, Ic
   );
 };
 
+// Main AuthPage component.
 export default function AuthPage() {
+  // Custom hook to get the translation function.
   const _ = useTranslation();
+  // Hook to access the router instance.
   const router = useRouter();
+  // Hook to manage the login state.
   const { login } = useAuth();
+  // Hook to access environment variables and the app service.
   const { envConfig, appService } = useEnv();
+  // Hook to access the theme store.
   const { isDarkMode } = useThemeStore();
+  // Hook to manage the traffic light state.
   const { isTrafficLightVisible } = useTrafficLightStore();
+  // Hook to manage the settings.
   const { settings, setSettings, saveSettings } = useSettingsStore();
+  // State to manage the port for the OAuth server.
   const [port, setPort] = useState<number | null>(null);
+  // Ref to check if the OAuth server is running.
   const isOAuthServerRunning = useRef(false);
+  // State to check if the component is mounted.
   const [isMounted, setIsMounted] = useState(false);
-
+  // Ref to the header element.
   const headerRef = useRef<HTMLDivElement>(null);
-
+  // Function to get the redirect URL for Tauri.
   const getTauriRedirectTo = (isOAuth: boolean) => {
     if (process.env.NODE_ENV === 'production' || appService?.isMobile) {
-      if (appService?.isMobile) {
-        return isOAuth ? DEEPLINK_CALLBACK : WEB_AUTH_CALLBACK;
-      }
-      return DEEPLINK_CALLBACK;
+      return isOAuth || appService?.isMobile ? DEEPLINK_CALLBACK : WEB_AUTH_CALLBACK;
     }
     return `http://localhost:${port}`; // only for development env on Desktop
   };
@@ -89,6 +107,7 @@ export default function AuthPage() {
       : `${window.location.origin}/auth/callback`;
   };
 
+  // Function to handle sign-in with Apple using Tauri.
   const tauriSignInApple = async () => {
     if (!supabase) {
       throw new Error('No backend connected');
@@ -109,6 +128,7 @@ export default function AuthPage() {
     }
   };
 
+  // Function to handle sign-in with other providers using Tauri.
   const tauriSignIn = async (provider: OAuthProvider) => {
     if (!supabase) {
       throw new Error('No backend connected');
@@ -126,8 +146,7 @@ export default function AuthPage() {
       console.error('Authentication error:', error);
       return;
     }
-    // Open the OAuth URL in a ASWebAuthenticationSession on iOS to comply with Apple's guidelines
-    // for other platforms, open the OAuth URL in the default browser
+    // Open the OAuth URL in a ASWebAuthenticationSession on iOS to comply with Apple's guidelines. For other platforms, open the OAuth URL in the default browser
     if (appService?.isIOSApp) {
       const res = await authWithSafari({ authUrl: data.url });
       if (res) {
@@ -143,6 +162,7 @@ export default function AuthPage() {
     }
   };
 
+  // Function to handle the OAuth callback URL.
   const handleOAuthUrl = async (url: string) => {
     console.log('Handle OAuth URL:', url);
     const hashMatch = url.match(/#(.*)/);
@@ -159,6 +179,7 @@ export default function AuthPage() {
     }
   };
 
+  // Function to start the Tauri OAuth process.
   const startTauriOAuth = async () => {
     try {
       if (process.env.NODE_ENV === 'production' || appService?.isMobile) {
@@ -191,6 +212,7 @@ export default function AuthPage() {
     }
   };
 
+  // Function to stop the Tauri OAuth process.
   const stopTauriOAuth = async () => {
     try {
       if (port) {
@@ -202,6 +224,7 @@ export default function AuthPage() {
     }
   };
 
+  // Function to handle going back from the auth page.
   const handleGoBack = () => {
     // Keep login false to avoid infinite loop to redirect to the login page
     settings.keepLogin = false;
@@ -210,6 +233,7 @@ export default function AuthPage() {
     router.back();
   };
 
+  // Function to get the localization for the auth form.
   const getAuthLocalization = () => {
     return {
       variables: {
@@ -265,6 +289,7 @@ export default function AuthPage() {
     };
   };
 
+  // Effect hook to start the Tauri OAuth process.
   useEffect(() => {
     if (!isTauriAppPlatform()) return;
     if (isOAuthServerRunning.current) return;
@@ -278,6 +303,7 @@ export default function AuthPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Effect hook to handle auth state change.
   useEffect(() => {
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.access_token && session.user) {
@@ -293,12 +319,14 @@ export default function AuthPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
+  // Effect hook to set isMounted to true when the component is mounted.
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
+  // Render null if the component is not mounted.
   if (!isMounted) {
-    return null;
+    return null; 
   }
 
   // For tauri app development, use a custom OAuth server to handle the OAuth callback

@@ -5,10 +5,14 @@ import { useEnv } from '@/context/EnvContext';
 import { useDrag } from '@/hooks/useDrag';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { impactFeedback } from '@tauri-apps/plugin-haptics';
-
+// Threshold for drag velocity to trigger a close action
 const VELOCITY_THRESHOLD = 0.5;
+// Threshold for snapping to a certain height
 const SNAP_THRESHOLD = 0.2;
 
+/**
+ * Dialog component props interface.
+ */
 interface DialogProps {
   id?: string;
   isOpen: boolean;
@@ -23,6 +27,10 @@ interface DialogProps {
   onClose: () => void;
 }
 
+/**
+ * Dialog component: A modal dialog that can be dragged to close on mobile.
+ * This component is designed to be a versatile dialog with customizable content and behavior.
+ */
 const Dialog: React.FC<DialogProps> = ({
   id,
   isOpen,
@@ -37,12 +45,15 @@ const Dialog: React.FC<DialogProps> = ({
   onClose,
 }) => {
   const { appService } = useEnv();
+  // State to determine if the dialog should be full height in mobile
   const [isFullHeightInMobile, setIsFullHeightInMobile] = React.useState(!snapHeight);
+  // Responsive icon size
   const iconSize22 = useResponsiveSize(22);
+  // Check if it's mobile device
   const isMobile = window.innerWidth < 640;
 
   const handleKeyDown = (event: KeyboardEvent) => {
-    if (event.key === 'Escape') {
+    if (event.key === 'Escape') { // Close dialog on Escape key
       onClose();
     }
   };
@@ -56,14 +67,18 @@ const Dialog: React.FC<DialogProps> = ({
   }, []);
 
   const handleDragMove = (data: { clientY: number; deltaY: number }) => {
+    // Only handle drag on mobile
     if (!isMobile) return;
-
+    // Get modal and overlay element
     const modal = document.querySelector('.modal-box') as HTMLElement;
     const overlay = document.querySelector('.overlay') as HTMLElement;
 
+    // Calculate height fraction for smooth animation
     const heightFraction = data.clientY / window.innerHeight;
+    // Adjust new top based on drag data
     const newTop = Math.max(0.0, Math.min(1, heightFraction));
 
+    // Update modal styles based on drag data
     if (modal && overlay) {
       modal.style.height = '100%';
       modal.style.transform = `translateY(${newTop * 100}%)`;
@@ -75,12 +90,16 @@ const Dialog: React.FC<DialogProps> = ({
   };
 
   const handleDragEnd = (data: { velocity: number; clientY: number }) => {
+    // Get modal and overlay element
     const modal = document.querySelector('.modal-box') as HTMLElement;
     const overlay = document.querySelector('.overlay') as HTMLElement;
+    // Return if no modal or overlay element
     if (!modal || !overlay) return;
 
+    // Calculate upper and lower snap points
     const snapUpper = snapHeight ? 1 - snapHeight - SNAP_THRESHOLD : 0.5;
     const snapLower = snapHeight ? 1 - snapHeight + SNAP_THRESHOLD : 0.5;
+    // Handle dragging down to close
     if (
       data.velocity > VELOCITY_THRESHOLD ||
       (data.velocity >= 0 && data.clientY >= window.innerHeight * snapLower)
@@ -90,6 +109,7 @@ const Dialog: React.FC<DialogProps> = ({
       modal.style.transition = `transform ${transitionDuration}s ease-out`;
       modal.style.transform = 'translateY(100%)';
       overlay.style.transition = `opacity ${transitionDuration}s ease-out`;
+      // Update overlay opacity to 0
       overlay.style.opacity = '0';
       setTimeout(() => {
         onClose();
@@ -98,6 +118,7 @@ const Dialog: React.FC<DialogProps> = ({
       if (appService?.hasHaptics) {
         impactFeedback('medium');
       }
+      // Handle snapping to snap height
     } else if (
       snapHeight &&
       data.clientY > window.innerHeight * snapUpper &&
@@ -111,6 +132,7 @@ const Dialog: React.FC<DialogProps> = ({
       if (appService?.hasHaptics) {
         impactFeedback('medium');
       }
+    // Reset to full height
     } else {
       setIsFullHeightInMobile(true);
       modal.style.height = '100%';
@@ -123,11 +145,14 @@ const Dialog: React.FC<DialogProps> = ({
     }
   };
 
+  // Start dragging handler
   const { handleDragStart } = useDrag(handleDragMove, handleDragEnd);
 
   return (
     <dialog
+      // Set dialog id
       id={id ?? 'dialog'}
+      // Set dialog open status
       open={isOpen}
       className={clsx(
         'modal sm:min-w-90 z-50 h-full w-full !items-start !bg-transparent sm:w-full sm:!items-center',
@@ -135,10 +160,12 @@ const Dialog: React.FC<DialogProps> = ({
       )}
     >
       <div
+      // Overlay style
         className={clsx('overlay fixed inset-0 z-10 bg-black/50 sm:bg-black/20', bgClassName)}
         onClick={onClose}
       />
       <div
+      // Main box style
         className={clsx(
           'modal-box settings-content z-20 flex flex-col rounded-none rounded-tl-2xl rounded-tr-2xl p-0 sm:rounded-2xl',
           'h-full max-h-full w-full max-w-full',
@@ -150,6 +177,7 @@ const Dialog: React.FC<DialogProps> = ({
             'pt-[env(safe-area-inset-top)] sm:pt-0',
           boxClassName,
         )}
+        // Snapped height style
         style={
           snapHeight
             ? {
@@ -159,6 +187,7 @@ const Dialog: React.FC<DialogProps> = ({
             : {}
         }
       >
+        {/* Only show drag handle in mobile device */}
         {window.innerWidth < 640 && (
           <div
             className='drag-handle flex h-10 max-h-10 min-h-10 w-full cursor-row-resize items-center justify-center'
@@ -168,6 +197,7 @@ const Dialog: React.FC<DialogProps> = ({
             <div className='bg-base-content/50 h-1 w-10 rounded-full'></div>
           </div>
         )}
+        {/* Header style */}
         <div className='dialog-header bg-base-100 sticky top-1 z-10 flex items-center justify-between px-4'>
           {header ? (
             header
@@ -194,6 +224,7 @@ const Dialog: React.FC<DialogProps> = ({
               >
                 <svg
                   xmlns='http://www.w3.org/2000/svg'
+                  // Close icon
                   width='1em'
                   height='1em'
                   viewBox='0 0 24 24'
@@ -207,7 +238,7 @@ const Dialog: React.FC<DialogProps> = ({
             </div>
           )}
         </div>
-
+        {/* Content style */}
         <div
           className={clsx(
             'text-base-content my-2 flex-grow overflow-y-auto px-6 sm:px-[10%]',

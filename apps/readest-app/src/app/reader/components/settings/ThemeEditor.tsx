@@ -1,39 +1,59 @@
 import { useState } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
-import { CustomTheme } from '@/styles/themes';
+import { CustomTheme } from '@/styles/themes'; // Importing the custom theme type
 import { md5Fingerprint } from '@/utils/md5';
-import { CUSTOM_THEME_TEMPLATES } from '@/services/constants';
-import { useSettingsStore } from '@/store/settingsStore';
+import { CUSTOM_THEME_TEMPLATES } from '@/services/constants'; // Importing predefined theme templates
+import { useSettingsStore } from '@/store/settingsStore'; // Importing the settings store hook
 import clsx from 'clsx';
-import ColorInput from './ColorInput';
+import ColorInput from './ColorInput'; // Importing the color input component
 
+// Define the properties for the ThemeEditor component
 type ThemeEditorProps = {
-  customTheme: CustomTheme | null;
-  onSave: (customTheme: CustomTheme) => void;
-  onDelete: (customTheme: CustomTheme) => void;
-  onCancel: () => void;
+  customTheme: CustomTheme | null; // The custom theme being edited, can be null for a new theme
+  onSave: (customTheme: CustomTheme) => void; // Callback to save the custom theme
+  onDelete: (customTheme: CustomTheme) => void; // Callback to delete the custom theme
+  onCancel: () => void; // Callback to cancel theme editing
 };
 
+// ThemeEditor component for creating and editing custom themes
 const ThemeEditor: React.FC<ThemeEditorProps> = ({ customTheme, onSave, onDelete, onCancel }) => {
-  const _ = useTranslation();
-  const { settings } = useSettingsStore();
+  const _ = useTranslation(); // Hook for translations
+  const { settings } = useSettingsStore(); // Hook to access settings from the store
+
+  // Select a random theme template for default values
   const template =
     CUSTOM_THEME_TEMPLATES[Math.floor(Math.random() * CUSTOM_THEME_TEMPLATES.length)]!;
+
+  // State for light mode text color, initialized with existing value or template default
   const [lightTextColor, setLightTextColor] = useState(
     customTheme?.colors.light.fg || template.light.fg,
   );
+  // State for light mode background color, initialized with existing value or template default
   const [lightBackgroundColor, setLightBackgroundColor] = useState(
     customTheme?.colors.light.bg || template.light.bg,
   );
+  // State for dark mode text color, initialized with existing value or template default
   const [darkTextColor, setDarkTextColor] = useState(
     customTheme?.colors.dark.fg || template.dark.fg,
   );
+  // State for dark mode background color, initialized with existing value or template default
   const [darkBackgroundColor, setDarkBackgroundColor] = useState(
     customTheme?.colors.dark.bg || template.dark.bg,
   );
 
+  // State for the theme name, initialized with existing name or default 'Custom'
   const [themeName, setThemeName] = useState(customTheme?.label || _('Custom'));
 
+  /**
+   * ThemePreview component
+   * 
+   * Renders a preview of the theme using the specified text and background colors.
+   * 
+   * @param textColor - The color of the text.
+   * @param backgroundColor - The background color.
+   * @param label - The label for the preview.
+   * @returns A div element that displays a color preview, with text color and background color applied
+   */
   const ThemePreview: React.FC<{
     textColor: string;
     backgroundColor: string;
@@ -57,6 +77,13 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ customTheme, onSave, onDelete
     </div>
   );
 
+  /**
+   * getCustomTheme function
+   *
+   * Creates and returns a custom theme object based on the current state of the component.
+   *
+   * @returns A CustomTheme object with the theme name, label, and colors.
+   */
   const getCustomTheme = () => {
     return {
       name: md5Fingerprint(themeName),
@@ -76,6 +103,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ customTheme, onSave, onDelete
     };
   };
 
+  // Render the theme editor interface
   return (
     <div className='mt-6 rounded-lg'>
       <div className='mb-4'>
@@ -115,12 +143,14 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ customTheme, onSave, onDelete
             className='bg-base-100 text-base-content border-base-200 w-[calc(50%-12px)] rounded border p-2 text-sm'
           />
         </div>
-      </div>
+      </div> {/* End theme name and buttons */}
 
       <div className='grid grid-cols-2 gap-6'>
+        {/* Light Mode Editor */}
         <div className='bg-base-200 rounded-lg p-3'>
           <h3 className='mb-3 text-center font-medium'>{_('Light Mode')}</h3>
 
+          {/* Color inputs for light mode */}
           <ColorInput label={_('Text Color')} value={lightTextColor} onChange={setLightTextColor} />
 
           <ColorInput
@@ -134,8 +164,9 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ customTheme, onSave, onDelete
             backgroundColor={lightBackgroundColor}
             label={_('Preview')}
           />
-        </div>
+        </div> {/* End Light Mode Editor */}
 
+        {/* Dark Mode Editor */}
         <div className='bg-base-300 rounded-lg p-3'>
           <h3 className='mb-3 text-center font-medium'>{_('Dark Mode')}</h3>
 
@@ -152,10 +183,10 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ customTheme, onSave, onDelete
             backgroundColor={darkBackgroundColor}
             label={_('Preview')}
           />
-        </div>
-      </div>
-    </div>
+        </div> {/* End Dark Mode Editor */}
+      </div> {/* End grid for light/dark mode editors */}
+    </div> {/* End main container */}
   );
 };
 
-export default ThemeEditor;
+export default ThemeEditor; // Export the ThemeEditor component

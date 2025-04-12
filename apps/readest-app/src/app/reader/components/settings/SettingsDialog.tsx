@@ -1,58 +1,65 @@
 import clsx from 'clsx';
 import React, { useState } from 'react';
-import { BookConfig } from '@/types/book';
+import { BookConfig } from '@/types/book'; // Import the BookConfig type
 import { useSettingsStore } from '@/store/settingsStore';
 import { useTranslation } from '@/hooks/useTranslation';
-import { RiFontSize } from 'react-icons/ri';
-import { RiDashboardLine } from 'react-icons/ri';
-import { VscSymbolColor } from 'react-icons/vsc';
-import { PiDotsThreeVerticalBold } from 'react-icons/pi';
-import { IoAccessibilityOutline } from 'react-icons/io5';
-import { MdArrowBackIosNew } from 'react-icons/md';
+import { RiFontSize } from 'react-icons/ri'; // Icon for Font settings
+import { RiDashboardLine } from 'react-icons/ri'; // Icon for Layout settings
+import { VscSymbolColor } from 'react-icons/vsc'; // Icon for Color settings
+import { PiDotsThreeVerticalBold } from 'react-icons/pi'; // Icon for more options dropdown
+import { IoAccessibilityOutline } from 'react-icons/io5'; // Icon for Misc settings
+import { MdArrowBackIosNew } from 'react-icons/md'; // Icon for back button
 
-import FontPanel from './FontPanel';
-import LayoutPanel from './LayoutPanel';
-import ColorPanel from './ColorPanel';
-import Dropdown from '@/components/Dropdown';
-import Dialog from '@/components/Dialog';
-import DialogMenu from './DialogMenu';
-import MiscPanel from './MiscPanel';
+import FontPanel from './FontPanel'; // Component for font settings
+import LayoutPanel from './LayoutPanel'; // Component for layout settings
+import ColorPanel from './ColorPanel'; // Component for color settings
+import Dropdown from '@/components/Dropdown'; // Generic dropdown component
+import Dialog from '@/components/Dialog'; // Generic dialog/modal component
+import DialogMenu from './DialogMenu'; // Component for the dialog menu (more options)
+import MiscPanel from './MiscPanel'; // Component for miscellaneous settings
 
-type SettingsPanelType = 'Font' | 'Layout' | 'Color' | 'Misc';
+// Define the types of settings panels available in the dialog
+type SettingsPanelType = 'Font' | 'Layout' | 'Color' | 'Misc'; // Type for the active panel
 
+// Define the structure for a tab configuration
 type TabConfig = {
-  tab: SettingsPanelType;
-  icon: React.ElementType;
-  label: string;
+  tab: SettingsPanelType; // The type of the settings panel
+  icon: React.ElementType; // The icon component for the tab
+  label: string; // The label text for the tab
 };
 
+// Main settings dialog component
 const SettingsDialog: React.FC<{ bookKey: string; config: BookConfig }> = ({ bookKey }) => {
-  const _ = useTranslation();
+  const _ = useTranslation(); // Translation hook for localization
+
+  // State to track the currently active panel (Font, Layout, Color, Misc)
   const [activePanel, setActivePanel] = useState<SettingsPanelType>(
+    // Load the last active panel from local storage, default to 'Font'
     (localStorage.getItem('lastConfigPanel') || 'Font') as SettingsPanelType,
   );
-  const { setFontLayoutSettingsDialogOpen } = useSettingsStore();
+  const { setFontLayoutSettingsDialogOpen } = useSettingsStore(); // State management to open/close the dialog
 
+  // Configuration for each tab in the settings dialog
   const tabConfig = [
     {
-      tab: 'Font',
-      icon: RiFontSize,
-      label: _('Font'),
+      tab: 'Font', // Panel type: Font
+      icon: RiFontSize, // Icon for the tab
+      label: _('Font'), // Translated label for the tab
     },
     {
-      tab: 'Layout',
-      icon: RiDashboardLine,
-      label: _('Layout'),
+      tab: 'Layout', // Panel type: Layout
+      icon: RiDashboardLine, // Icon for the tab
+      label: _('Layout'), // Translated label for the tab
     },
     {
-      tab: 'Color',
-      icon: VscSymbolColor,
-      label: _('Color'),
+      tab: 'Color', // Panel type: Color
+      icon: VscSymbolColor, // Icon for the tab
+      label: _('Color'), // Translated label for the tab
     },
     {
-      tab: 'Misc',
-      icon: IoAccessibilityOutline,
-      label: _('Misc'),
+      tab: 'Misc', // Panel type: Misc
+      icon: IoAccessibilityOutline, // Icon for the tab
+      label: _('Misc'), // Translated label for the tab
     },
   ] as TabConfig[];
 
@@ -61,16 +68,19 @@ const SettingsDialog: React.FC<{ bookKey: string; config: BookConfig }> = ({ boo
     localStorage.setItem('lastConfigPanel', tab);
   };
 
+  // Close the settings dialog
   const handleClose = () => {
     setFontLayoutSettingsDialogOpen(false);
   };
 
+  // Render the settings dialog
   return (
     <>
+      {/* Main dialog component */}
       <Dialog
-        isOpen={true}
-        onClose={handleClose}
-        className='modal-open'
+        isOpen={true} // Dialog is always open
+        onClose={handleClose} // Callback when the dialog is closed
+        className='modal-open' // Add a class when modal is open
         boxClassName='sm:min-w-[520px]'
         snapHeight={window.innerWidth < 640 ? 0.7 : undefined}
         header={
@@ -84,6 +94,7 @@ const SettingsDialog: React.FC<{ bookKey: string; config: BookConfig }> = ({ boo
             >
               <MdArrowBackIosNew />
             </button>
+            {/* Tab navigation for different settings panels */}
             <div className='dialog-tabs flex h-10 max-w-[100%] flex-grow items-center gap-2 pl-4'>
               {tabConfig.map(({ tab, icon: Icon, label }) => (
                 <button
@@ -99,6 +110,7 @@ const SettingsDialog: React.FC<{ bookKey: string; config: BookConfig }> = ({ boo
                 </button>
               ))}
             </div>
+            {/* More options dropdown and close button */}
             <div className='flex h-full items-center justify-end gap-x-2'>
               <Dropdown
                 className='dropdown-bottom dropdown-end'
@@ -127,10 +139,12 @@ const SettingsDialog: React.FC<{ bookKey: string; config: BookConfig }> = ({ boo
           </div>
         }
       >
+        {/* Render the active settings panel based on the activePanel state */}
         {activePanel === 'Font' && <FontPanel bookKey={bookKey} />}
         {activePanel === 'Layout' && <LayoutPanel bookKey={bookKey} />}
         {activePanel === 'Color' && <ColorPanel bookKey={bookKey} />}
         {activePanel === 'Misc' && <MiscPanel bookKey={bookKey} />}
+        {/* End of Dialog body */}
       </Dialog>
     </>
   );

@@ -1,18 +1,53 @@
 {
   "compilerOptions": {
+    // Enables incremental compilation.
+    // Stores information about the project state from the last compilation to speed up
+    // subsequent compilations by only recompiling changed files and their dependencies.
     "incremental": true,
+
+    // Sets the ECMAScript target version for the compiled JavaScript code.
+    // 'es2022' includes support for the latest JavaScript features up to that version,
+    // ensuring modern syntax and built-in methods can be used.
     "target": "es2022",
+
+    // Determines the module system used for the output JavaScript. 
+    // 'preserve' prevents TypeScript from transforming modules into other module formats, 
+    // allowing the bundler to handle module resolution.
     "module": "preserve",
+
+    // Allows JavaScript files to be included in the project and type-checked by TypeScript.
     "allowJs": true,
+
+    // Generates corresponding '.d.ts' files for each TypeScript file.
+    // These files provide type definitions for your code, enabling type checking in other projects
+    // that use your code without needing to compile the source code.
     "declaration": true,
+
+    // Enables strict type-checking options. 
+    // This is a set of type-checking settings that are recommended for most projects to ensure type safety.
     "strict": true,
+
+    // Determines how modules are resolved.
+    // 'bundler' uses resolution rules similar to those of modern JavaScript bundlers like Webpack and Rollup,
+    // allowing for module path resolution based on node_modules and package.json.
     "moduleResolution": "bundler",
+
+    // Enables interoperability between CommonJS and ES modules.
+    // Makes it easier to import CommonJS modules in your TypeScript code and vice versa.
     "esModuleInterop": true,
+
+    // Skips type checking of all declaration files (.d.ts).
+    // This speeds up the build process by not performing type checks on type definition files,
+    // which are typically well-maintained and less likely to contain errors.
     "skipLibCheck": true,
   },
+  // Specifies the files included in the project.
+  // An empty array means no explicit files are included, TypeScript includes files based on project structure.
   "files": [],
+   // Specifies project references. This can include paths to other tsconfig.json files.
   "references": [
     {
+        // Path to the packages directory, indicating that it's a project dependency.
       "path": "./packages"
     }
   ]

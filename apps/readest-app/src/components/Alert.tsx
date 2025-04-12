@@ -1,16 +1,24 @@
 import clsx from 'clsx';
 import React from 'react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useTranslation } from '@/hooks/useTranslation'; // Import the translation hook for localization.
 
+/**
+ * Alert Component
+ *
+ * This component renders a customizable alert dialog that can be used to display messages
+ * and prompt the user to take action (e.g., confirm an action or cancel).
+ */
 const Alert: React.FC<{
-  title: string;
-  message: string;
-  onCancel: () => void;
-  onConfirm: () => void;
+  title: string; // The title of the alert dialog.
+  message: string; // The message content of the alert dialog.
+  onCancel: () => void; // Callback function to execute when the "Cancel" button is clicked.
+  onConfirm: () => void; // Callback function to execute when the "Confirm" button is clicked.
 }> = ({ title, message, onCancel, onConfirm }) => {
-  const _ = useTranslation();
+  const _ = useTranslation(); // Initialize the translation hook to access translated strings.
   return (
+    // Main container for the alert, centered and with padding.
     <div className={clsx('z-[100] flex justify-center px-4')}>
+      {/* The alert dialog itself. */}
       <div
         role='alert'
         className={clsx(
@@ -19,6 +27,7 @@ const Alert: React.FC<{
           'w-full max-w-[90vw] sm:max-w-[70vw] md:max-w-[50vw] lg:max-w-[40vw] xl:max-w-[40vw]',
         )}
       >
+        {/* Container for the icon and text. */}
         <div className='flex items-center space-x-2'>
           <svg
             xmlns='http://www.w3.org/2000/svg'
@@ -33,11 +42,15 @@ const Alert: React.FC<{
               d='M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
             ></path>
           </svg>
+          {/* Container for the title and message. */}
           <div className=''>
+            {/* The title of the alert. */}
             <h3 className='font-sm text-base'>{title}</h3>
+            {/* The message of the alert. */}
             <div className='text-xs'>{message}</div>
           </div>
         </div>
+        {/* Container for the action buttons. */}
         <div className='flex flex-wrap items-center justify-center gap-2'>
           <button className='btn btn-sm' onClick={onCancel}>
             {_('Cancel')}
@@ -51,4 +64,5 @@ const Alert: React.FC<{
   );
 };
 
-export default Alert;
+export default Alert; // Export the Alert component for use in other parts of the application.
+

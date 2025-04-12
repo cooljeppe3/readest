@@ -1,20 +1,27 @@
 # Contribution Guidelines
 
+<!-- This section outlines the code of conduct and general guidelines for contributing to the Readest project. -->
 When contributing to `Readest`, whether on GitHub or in other community spaces:
 
+<!-- - Encourages respectful, civil, and open-minded interactions among contributors. -->
 - Be respectful, civil, and open-minded.
+<!-- - Suggests checking the issue tracker for existing issues or fixes before creating a new pull request. -->
 - Before opening a new pull request, try searching through the [issue tracker](https://github.com/chrox/readest/issues) for known issues or fixes.
+<!-- - Emphasizes the importance of discussing proposed changes based on personal opinions in an issue before implementing them. -->
 - If you want to make code changes based on your personal opinion(s), make sure you open an issue first describing the changes you want to make, and open a pull request only when your suggestions get approved by maintainers.
 
 ## How to Contribute
 
 ### Prerequisites
 
+<!-- This section guides potential contributors on how to start contributing by first opening an issue to discuss their ideas. -->
+
 In order to not waste your time implementing a change that has already been declined, or is generally not needed, start by [opening an issue](https://github.com/chrox/readest/issues/new/choose) describing the problem you would like to solve.
 
 For the best experience to build Readest for yourself, use a recent version of Node.js and Rust. Refer to the [Tauri documentation](https://v2.tauri.app/start/prerequisites/) for details on setting up the development environment prerequisites on different platforms.
 
 Basically you need to install or update the following development tools:
+<!-- Lists the basic development tools needed for Readest: Node.js, pnpm, Rust, and Cargo. -->
 
 - **Node.js** and **pnpm** for Next.js development
 - **Rust** and **Cargo** for Tauri development
@@ -28,6 +35,7 @@ rustup update
 
 ### Getting Started
 
+<!-- This section details the steps to clone the repository, install dependencies, and build Readest. -->
 To get started with Readest, follow these steps to clone and build the project.
 
 #### 1. Clone the Repository

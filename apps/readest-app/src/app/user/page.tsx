@@ -1,17 +1,22 @@
 'use client';
 
+// Import necessary modules and components from external libraries and internal files.
 import clsx from 'clsx';
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { IoArrowBack } from 'react-icons/io5';
 import { PiUserCircle } from 'react-icons/pi';
+// Import custom hooks and contexts.
 import { useEnv } from '@/context/EnvContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/hooks/useTranslation';
+// Import custom stores.
 import { useSettingsStore } from '@/store/settingsStore';
 import { useTrafficLightStore } from '@/store/trafficLightStore';
+// Import custom types, utility functions and components.
+
 import { QuotaType, UserPlan } from '@/types/user';
 import { getStoragePlanData, getUserPlan } from '@/utils/access';
 import { navigateToLibrary } from '@/utils/nav';
@@ -20,25 +25,36 @@ import { eventDispatcher } from '@/utils/event';
 import { Toast } from '@/components/Toast';
 import WindowButtons from '@/components/WindowButtons';
 import Quota from '@/components/Quota';
-
+/**
+ * ProfilePage component displays the user's profile information, including user plan details,
+ * storage quota, and options to sign out or delete the account.
+ */
 const ProfilePage = () => {
+  // Custom hook for i18n translations.
   const _ = useTranslation();
+  // Hook for navigation.
   const router = useRouter();
+  // Custom hook for environment variables and app service.
   const { envConfig, appService } = useEnv();
+  // Custom hook for authentication state.
   const { token, user, logout } = useAuth();
+  // Custom store for traffic light visibility.
   const { isTrafficLightVisible } = useTrafficLightStore();
+  // Custom store for user settings.
   const { settings, setSettings, saveSettings } = useSettingsStore();
+  // State to manage the user's plan.
   const [userPlan, setUserPlan] = useState<UserPlan>('free');
+  // State to manage quotas of the user.
   const [quotas, setQuotas] = React.useState<QuotaType[]>([]);
+  // State to control the visibility of the account deletion confirmation modal.
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
-
+  // Ref to manage the header element.
   const headerRef = useRef<HTMLDivElement>(null);
-
+  // Ensure the application theme is applied.
   useTheme();
-
+  // Fetch user data and storage plan on component mount or when the token changes.
   useEffect(() => {
     if (!user || !token) return;
-
     try {
       const userPlan = getUserPlan(token);
       const storagePlan = getStoragePlanData(token);
@@ -58,27 +74,31 @@ const ProfilePage = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
-
+  // Navigates to the library page.
   const handleGoBack = () => {
     navigateToLibrary(router);
   };
-
+  // Logs the user out and resets settings.
   const handleLogout = () => {
     logout();
     settings.keepLogin = false;
     setSettings(settings);
     saveSettings(envConfig, settings);
     navigateToLibrary(router);
-  };
 
+  };
+  // Shows the confirmation modal for account deletion.
   const handleDeleteRequest = () => {
     setShowConfirmDelete(true);
   };
-
+  // Hides the confirmation modal for account deletion.
   const handleCancelDelete = () => {
     setShowConfirmDelete(false);
   };
-
+  /**
+   * Deletes the user's account and logs them out.
+   * Displays an error toast if the deletion fails.
+   */
   const handleConfirmDelete = async () => {
     try {
       await deleteUser();
@@ -92,7 +112,11 @@ const ProfilePage = () => {
     }
     setShowConfirmDelete(false);
   };
-
+  /**
+   * Returns the plan details (name, color, features) based on the user's plan.
+   * @param userPlan - The user's current plan ('free', 'plus', or 'pro').
+   * @returns An object containing the plan's name, color, and features.
+   */
   const getPlanDetails = (userPlan: UserPlan) => {
     switch (userPlan) {
       case 'free':
@@ -138,7 +162,7 @@ const ProfilePage = () => {
         };
     }
   };
-
+  // Display loading if user or token are not available.
   if (!user || !token) {
     return (
       <div className='mx-auto max-w-4xl px-4 py-8'>
@@ -150,12 +174,16 @@ const ProfilePage = () => {
       </div>
     );
   }
-
+  // Get the avatar url, full name, and email from user's metadata.
   const avatarUrl = user?.user_metadata?.['picture'] || user?.user_metadata?.['avatar_url'];
   const userFullName = user?.user_metadata?.['full_name'] || '-';
   const userEmail = user?.email || '';
+  // get plan details for the user's current plan.
   const planDetails = getPlanDetails(userPlan) || getPlanDetails('free');
 
+  /**
+   * Renders the main profile page content.
+   */
   return (
     <div
       className={clsx(
@@ -164,6 +192,7 @@ const ProfilePage = () => {
         appService?.hasSafeAreaInset && 'pt-[env(safe-area-inset-top)]',
       )}
     >
+      {/* Header section of the page */}
       <div
         ref={headerRef}
         className={clsx(
@@ -171,12 +200,13 @@ const ProfilePage = () => {
           appService?.hasTrafficLight && 'pt-11',
         )}
       >
+        {/* Back button to navigate to the library page. */}
         <button onClick={handleGoBack} className={clsx('btn btn-ghost h-8 min-h-8 w-8 p-0')}>
           <IoArrowBack className='text-base-content' />
         </button>
-
+        {/* Window buttons for desktop app */}
         {appService?.hasWindowBar && (
-          <WindowButtons
+            <WindowButtons
             headerRef={headerRef}
             showMinimize={!isTrafficLightVisible}
             showMaximize={!isTrafficLightVisible}
@@ -185,9 +215,11 @@ const ProfilePage = () => {
           />
         )}
       </div>
+      {/* Main content of the page */}
       <div className='w-full min-w-60 max-w-4xl px-4 py-10'>
         <div className='bg-base-200 overflow-hidden rounded-lg p-2 shadow-md sm:p-6'>
           <div className='p-2 sm:p-6'>
+            {/* User avatar and details section. */}
             <div className='mb-8 flex flex-col items-center gap-x-6 gap-y-4 md:flex-row md:items-start'>
               <div className='flex-shrink-0'>
                 {avatarUrl ? (
@@ -217,7 +249,7 @@ const ProfilePage = () => {
                 </div>
               </div>
             </div>
-
+            {/* User plan features section */}
             <div className='bg-base-100 mb-8 rounded-lg px-4 py-6'>
               <h3 className='text-base-content mb-2 text-lg font-semibold'>{_('Features')}</h3>
               <div className='mt-6'>
@@ -241,7 +273,7 @@ const ProfilePage = () => {
                 </ul>
               </div>
             </div>
-
+            {/* User plan quotas section */}
             <div className='bg-base-300 mb-8 rounded-lg'>
               <div className='p-0'>
                 {quotas && quotas.length > 0 ? (
@@ -251,7 +283,7 @@ const ProfilePage = () => {
                 )}
               </div>
             </div>
-
+            {/* User actions: logout or delete account */}
             <div className='flex flex-col gap-4 md:flex-row'>
               <button
                 onClick={handleLogout}
@@ -268,7 +300,7 @@ const ProfilePage = () => {
             </div>
           </div>
         </div>
-
+        {/* Confirmation modal for account deletion */}
         {showConfirmDelete && (
           <div className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4'>
             <div className='w-full max-w-md rounded-2xl bg-white p-6'>
@@ -296,9 +328,10 @@ const ProfilePage = () => {
           </div>
         )}
       </div>
+      {/* Toast component to display messages to the user */}
       <Toast />
     </div>
   );
 };
-
+// Export the ProfilePage component as the default export.
 export default ProfilePage;

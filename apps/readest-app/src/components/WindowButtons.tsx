@@ -1,28 +1,36 @@
 import clsx from 'clsx';
 import React, { useEffect, useRef } from 'react';
 import { useEnv } from '@/context/EnvContext';
-
 import { tauriHandleMinimize, tauriHandleToggleMaximize, tauriHandleClose } from '@/utils/window';
 import { isTauriAppPlatform } from '@/services/environment';
 
+/**
+ * Props for the WindowButtons component, which controls the window minimize, maximize, and close buttons.
+ */
 interface WindowButtonsProps {
-  className?: string;
-  headerRef?: React.RefObject<HTMLDivElement>;
-  showMinimize?: boolean;
-  showMaximize?: boolean;
-  showClose?: boolean;
-  onMinimize?: () => void;
-  onToggleMaximize?: () => void;
-  onClose?: () => void;
+  className?: string; // Additional CSS classes for the component.
+  headerRef?: React.RefObject<HTMLDivElement>; // Reference to the header element for dragging.
+  showMinimize?: boolean; // Whether to show the minimize button.
+  showMaximize?: boolean; // Whether to show the maximize/restore button.
+  showClose?: boolean; // Whether to show the close button.
+  onMinimize?: () => void; // Callback for custom minimize behavior.
+  onToggleMaximize?: () => void; // Callback for custom maximize/restore behavior.
+  onClose?: () => void; // Callback for custom close behavior.
 }
 
+/**
+ * Props for the individual WindowButton components.
+ */
 interface WindowButtonProps {
-  id: string;
-  onClick: () => void;
-  ariaLabel: string;
-  children: React.ReactNode;
+  id: string; // Unique ID for the button.
+  onClick: () => void; // Click handler for the button.
+  ariaLabel: string; // Accessible label for the button.
+  children: React.ReactNode; // Content inside the button, typically an SVG icon.
 }
 
+/**
+ * Individual button component for window controls.
+ */
 const WindowButton: React.FC<WindowButtonProps> = ({ onClick, ariaLabel, id, children }) => (
   <button
     id={id}
@@ -34,6 +42,9 @@ const WindowButton: React.FC<WindowButtonProps> = ({ onClick, ariaLabel, id, chi
   </button>
 );
 
+/**
+ * WindowButtons component: Manages the minimize, maximize/restore, and close buttons for the application window.
+ */
 const WindowButtons: React.FC<WindowButtonsProps> = ({
   className,
   headerRef,
@@ -45,8 +56,14 @@ const WindowButtons: React.FC<WindowButtonsProps> = ({
   onClose,
 }) => {
   const parentRef = useRef<HTMLDivElement>(null);
-  const { appService } = useEnv();
+  const { appService } = useEnv(); // Access the application service from the environment context.
 
+  /**
+   * Handles the mousedown event on the header.
+   * Allows the window to be dragged and toggled (maximized/restored) by double-clicking.
+   * @param e - The MouseEvent.
+   * @returns void
+   */
   const handleMouseDown = async (e: MouseEvent) => {
     const target = e.target as HTMLElement;
 
@@ -61,6 +78,7 @@ const WindowButtons: React.FC<WindowButtonsProps> = ({
 
     const { getCurrentWindow } = await import('@tauri-apps/api/window');
     if (e.buttons === 1) {
+      // check if it's a double click or a drag
       if (e.detail === 2) {
         getCurrentWindow().toggleMaximize();
       } else {
@@ -69,6 +87,10 @@ const WindowButtons: React.FC<WindowButtonsProps> = ({
     }
   };
 
+  /**
+   * Effect to add/remove the mousedown event listener for dragging the window.
+   * Only runs if the app is a Tauri app.
+   */
   useEffect(() => {
     if (!isTauriAppPlatform()) return;
     const headerElement = headerRef?.current;
@@ -80,6 +102,10 @@ const WindowButtons: React.FC<WindowButtonsProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /**
+   * Handles the minimize action.
+   * Either uses a custom callback or the default Tauri minimize function.
+   */
   const handleMinimize = async () => {
     if (onMinimize) {
       onMinimize();
@@ -87,6 +113,10 @@ const WindowButtons: React.FC<WindowButtonsProps> = ({
       tauriHandleMinimize();
     }
   };
+
+  /**
+   * Handles the maximize/restore action.
+   */
 
   const handleMaximize = async () => {
     if (onToggleMaximize) {
@@ -96,6 +126,10 @@ const WindowButtons: React.FC<WindowButtonsProps> = ({
     }
   };
 
+  /**
+   * Handles the close action.
+   * Either uses a custom callback or the default Tauri close function.
+   */
   const handleClose = async () => {
     if (onClose) {
       onClose();
@@ -104,6 +138,9 @@ const WindowButtons: React.FC<WindowButtonsProps> = ({
     }
   };
 
+  /**
+   * Render the WindowButtons component.
+   */
   return (
     <div
       ref={parentRef}
@@ -113,6 +150,7 @@ const WindowButtons: React.FC<WindowButtonsProps> = ({
         className,
       )}
     >
+      {/* Minimize Button */}
       {showMinimize && appService?.hasWindowBar && (
         <WindowButton onClick={handleMinimize} ariaLabel='Minimize' id='titlebar-minimize'>
           <svg xmlns='http://www.w3.org/2000/svg' width='1em' height='1em' viewBox='0 0 24 24'>
@@ -121,6 +159,7 @@ const WindowButtons: React.FC<WindowButtonsProps> = ({
         </WindowButton>
       )}
 
+      {/* Maximize/Restore Button */}
       {showMaximize && appService?.hasWindowBar && (
         <WindowButton onClick={handleMaximize} ariaLabel='Maximize/Restore' id='titlebar-maximize'>
           <svg xmlns='http://www.w3.org/2000/svg' width='1em' height='1em' viewBox='0 0 24 24'>
@@ -129,6 +168,7 @@ const WindowButtons: React.FC<WindowButtonsProps> = ({
         </WindowButton>
       )}
 
+      {/* Close Button */}
       {showClose && (appService?.hasWindowBar || onClose) && (
         <WindowButton onClick={handleClose} ariaLabel='Close' id='titlebar-close'>
           <svg xmlns='http://www.w3.org/2000/svg' width='1em' height='1em' viewBox='0 0 24 24'>

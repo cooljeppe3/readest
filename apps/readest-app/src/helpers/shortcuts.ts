@@ -1,3 +1,4 @@
+// Interface defining the structure for shortcut configurations.
 export interface ShortcutConfig {
   onSwitchSideBar: string[];
   onToggleSideBar: string[];
@@ -23,6 +24,7 @@ export interface ShortcutConfig {
   onCloseNote: string[];
 }
 
+// Default shortcut configurations for the application.
 const DEFAULT_SHORTCUTS: ShortcutConfig = {
   onSwitchSideBar: ['ctrl+Tab', 'opt+Tab', 'alt+Tab'],
   onToggleSideBar: ['s'],
@@ -48,17 +50,22 @@ const DEFAULT_SHORTCUTS: ShortcutConfig = {
   onCloseNote: ['Escape'],
 };
 
-// Load shortcuts from localStorage or fallback to defaults
+// Function to load shortcut configurations from localStorage or fallback to defaults.
 export const loadShortcuts = (): ShortcutConfig => {
+  // Check if localStorage is available (not available during server-side rendering).
   if (typeof localStorage === 'undefined') return DEFAULT_SHORTCUTS;
+
+  // Attempt to retrieve custom shortcuts from localStorage.
   const customShortcuts = JSON.parse(localStorage.getItem('customShortcuts') || '{}');
+
+  // Merge default shortcuts with custom shortcuts, custom shortcuts take precedence.
   return {
     ...DEFAULT_SHORTCUTS,
     ...customShortcuts,
   };
 };
 
-// Save custom shortcuts to localStorage
+// Function to save custom shortcut configurations to localStorage.
 export const saveShortcuts = (shortcuts: ShortcutConfig) => {
   localStorage.setItem('customShortcuts', JSON.stringify(shortcuts));
 };

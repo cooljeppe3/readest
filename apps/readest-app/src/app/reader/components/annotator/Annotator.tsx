@@ -1,39 +1,55 @@
+// Import necessary React hooks and components
 import React, { useState, useEffect, useRef } from 'react';
+// Import icons from react-icons library
 import { FiSearch } from 'react-icons/fi';
 import { FiCopy } from 'react-icons/fi';
 import { PiHighlighterFill } from 'react-icons/pi';
 import { FaWikipediaW } from 'react-icons/fa';
 import { BsPencilSquare } from 'react-icons/bs';
 import { RiDeleteBinLine } from 'react-icons/ri';
-import { BsTranslate } from 'react-icons/bs';
+import { BsTranslate } from 'react-icons/bs'; // Translation icon
 import { TbHexagonLetterD } from 'react-icons/tb';
 import { FaHeadphones } from 'react-icons/fa6';
 
+// Import CFI (Content Fragment Identifier) from foliate-js for precise content location
 import * as CFI from 'foliate-js/epubcfi.js';
+// Import Overlayer from foliate-js for annotation drawing
 import { Overlayer } from 'foliate-js/overlayer.js';
+// Import context and types from project files
 import { useEnv } from '@/context/EnvContext';
 import { BookNote, BooknoteGroup, HighlightColor, HighlightStyle } from '@/types/book';
+// Import utility functions
 import { getOSPlatform, uniqueId } from '@/utils/misc';
+// Import stores
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useNotebookStore } from '@/store/notebookStore';
+// Import hooks
 import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { useFoliateEvents } from '../../hooks/useFoliateEvents';
 import { useNotesSync } from '../../hooks/useNotesSync';
+// Import utility functions and constants for text selection, event dispatching, and table of contents
 import { getPopupPosition, getPosition, Position, TextSelection } from '@/utils/sel';
 import { eventDispatcher } from '@/utils/event';
 import { findTocItemBS } from '@/utils/toc';
 import { HIGHLIGHT_COLOR_HEX } from '@/services/constants';
+// Import popup components for different annotation actions
 import AnnotationPopup from './AnnotationPopup';
 import WiktionaryPopup from './WiktionaryPopup';
 import WikipediaPopup from './WikipediaPopup';
 import DeepLPopup from './DeepLPopup';
 
+// Annotator component: Main component for handling text selection and annotations
+
 const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
+  // Use translation hook for internationalization
   const _ = useTranslation();
+
+  // Access environment configuration and application services
   const { envConfig, appService } = useEnv();
+  // Access settings from the settings store
   const { settings } = useSettingsStore();
   const { getConfig, saveConfig, getBookData, updateBooknotes } = useBookDataStore();
   const { getProgress, getView, getViewsById, getViewSettings } = useReaderStore();
@@ -41,6 +57,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
 
   useNotesSync(bookKey);
 
+  // Get the operating system platform and book-specific data
   const osPlatform = getOSPlatform();
   const config = getConfig(bookKey)!;
   const progress = getProgress(bookKey)!;
@@ -48,16 +65,21 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   const view = getView(bookKey);
   const viewSettings = getViewSettings(bookKey)!;
 
+  // State variables for handling popups and selection states
   const isShowingPopup = useRef(false);
   const isTextSelected = useRef(false);
   const isUpToShowPopup = useRef(false);
   const isTouchstarted = useRef(false);
   const [selection, setSelection] = useState<TextSelection | null>();
+
+  // State variables for controlling popup visibility
   const [showAnnotPopup, setShowAnnotPopup] = useState(false);
   const [showWiktionaryPopup, setShowWiktionaryPopup] = useState(false);
   const [showWikipediaPopup, setShowWikipediaPopup] = useState(false);
   const [showDeepLPopup, setShowDeepLPopup] = useState(false);
+  // State variables for popup positions
   const [trianglePosition, setTrianglePosition] = useState<Position>();
+
   const [annotPopupPosition, setAnnotPopupPosition] = useState<Position>();
   const [dictPopupPosition, setDictPopupPosition] = useState<Position>();
   const [translatorPopupPosition, setTranslatorPopupPosition] = useState<Position>();
@@ -70,10 +92,12 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     settings.globalReadSettings.highlightStyles[selectedStyle],
   );
 
+  // Calculate responsive sizes and dimensions for popups
   const popupPadding = useResponsiveSize(10);
   const maxWidth = window.innerWidth - 2 * popupPadding;
   const maxHeight = window.innerHeight - 2 * popupPadding;
   const dictPopupWidth = Math.min(480, maxWidth);
+
   const dictPopupHeight = Math.min(300, maxHeight);
   const transPopupWidth = Math.min(480, maxWidth);
   const transPopupHeight = Math.min(360, maxHeight);
@@ -81,13 +105,16 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   const annotPopupHeight = useResponsiveSize(44);
   const androidSelectionHandlerHeight = 0;
 
+  // Event handler for when the iframe content is loaded
   const onLoad = (event: Event) => {
     const detail = (event as CustomEvent).detail;
     const { doc, index } = detail;
 
+     // Check if a text selection is valid
     const isValidSelection = (sel: Selection) => {
       return sel && sel.toString().trim().length > 0 && sel.rangeCount > 0;
     };
+    // Create a new selection object
     const makeSelection = (sel: Selection, rebuildRange = false) => {
       isTextSelected.current = true;
       const range = sel.getRangeAt(0);
@@ -97,6 +124,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
       }
       setSelection({ key: bookKey, text: sel.toString(), range, index });
     };
+    // Special handling for text selection on iOS
     // FIXME: extremely hacky way to dismiss system selection tools on iOS
     const makeSelectionOnIOS = (sel: Selection) => {
       isTextSelected.current = true;
@@ -110,6 +138,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
         }, 40);
       }, 0);
     };
+    // Handle selection change event
     const handleSelectionchange = () => {
       // Available on iOS, Android and Desktop, fired when the selection is changed
       // Ideally the popup only shows when the selection is done,
@@ -130,6 +159,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
         setShowDeepLPopup(false);
       }
     };
+    // Handle pointer up event
     const handlePointerup = () => {
       // Available on iOS and Desktop, fired when release the long press
       // Note that on Android, pointerup event is fired after an additional touch event
@@ -142,15 +172,18 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
         }
       }
     };
+     // Handle touch start event
     const handleTouchstart = () => {
       // Available on iOS and Android for the initial touch event
       isTouchstarted.current = true;
     };
+    // Handle touch move event
     const handleTouchmove = () => {
       // Available on iOS, on Android not fired
       // To make the popup not to follow the selection
       setShowAnnotPopup(false);
     };
+    // Handle touch end event
     const handleTouchend = () => {
       // Available on iOS, on Android fired after an additional touch event
       isTouchstarted.current = false;
@@ -174,6 +207,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     }
   };
 
+  // Event handler for drawing annotations
   const onDrawAnnotation = (event: Event) => {
     const detail = (event as CustomEvent).detail;
     const { draw, annotation, doc, range } = detail;
@@ -190,6 +224,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     }
   };
 
+  // Event handler for showing existing annotations
   const onShowAnnotation = (event: Event) => {
     const detail = (event as CustomEvent).detail;
     const { value: cfi, index, range } = detail;
@@ -206,12 +241,14 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     setSelection(selection);
   };
 
+   // Use Foliate events hook for managing custom events from Foliate
   useFoliateEvents(view, { onLoad, onDrawAnnotation, onShowAnnotation });
 
   const handleDismissPopup = () => {
     setSelection(null);
     setShowAnnotPopup(false);
     setShowWiktionaryPopup(false);
+
     setShowWikipediaPopup(false);
     setShowDeepLPopup(false);
     isShowingPopup.current = false;
@@ -223,6 +260,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     isTextSelected.current = false;
   };
 
+  // Effect to handle single clicks and export annotations
   useEffect(() => {
     const handleSingleClick = (): boolean => {
       if (isUpToShowPopup.current) {
@@ -249,6 +287,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+   // Effect to handle text selection changes and position popups
   useEffect(() => {
     setHighlightOptionsVisible(!!(selection && selection.annotated));
     if (selection && selection.text.trim().length > 0) {
@@ -292,6 +331,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selection, bookKey]);
 
+  // Effect to add existing annotations to the view when progress changes
   useEffect(() => {
     if (!progress) return;
     const { location } = progress;
@@ -314,6 +354,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progress]);
 
+   // Function to handle text copying
   const handleCopy = () => {
     if (!selection || !selection.text) return;
     eventDispatcher.dispatch('toast', {
@@ -356,6 +397,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     }
   };
 
+  // Function to handle text highlighting
   const handleHighlight = (update = false) => {
     if (!selection || !selection.text) return;
     setHighlightOptionsVisible(true);
@@ -402,6 +444,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     }
   };
 
+  // Function to handle annotation creation
   const handleAnnotate = () => {
     if (!selection || !selection.text) return;
     const { sectionHref: href } = progress;
@@ -412,30 +455,35 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     handleDismissPopup();
   };
 
+  // Function to handle text search
   const handleSearch = () => {
     if (!selection || !selection.text) return;
     setShowAnnotPopup(false);
     eventDispatcher.dispatch('search', { term: selection.text });
   };
 
+  // Function to handle dictionary lookup
   const handleDictionary = () => {
     if (!selection || !selection.text) return;
     setShowAnnotPopup(false);
     setShowWiktionaryPopup(true);
   };
 
+  // Function to handle Wikipedia lookup
   const handleWikipedia = () => {
     if (!selection || !selection.text) return;
     setShowAnnotPopup(false);
     setShowWikipediaPopup(true);
   };
 
+  // Function to handle text translation
   const handleTranslation = () => {
     if (!selection || !selection.text) return;
     setShowAnnotPopup(false);
     setShowDeepLPopup(true);
   };
 
+  // Function to handle text-to-speech
   const handleSpeakText = async () => {
     if (!selection || !selection.text) return;
     setShowAnnotPopup(false);
@@ -443,6 +491,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   };
 
   const handleExportMarkdown = (event: CustomEvent) => {
+     // Extract book key from the event detail
     const { bookKey: exportBookKey } = event.detail;
     if (bookKey !== exportBookKey) return;
 
@@ -527,6 +576,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     URL.revokeObjectURL(url);
   };
 
+  // Define annotation buttons
   const selectionAnnotated = selection?.annotated;
   const buttons = [
     { tooltipText: _('Copy'), Icon: FiCopy, onClick: handleCopy },
@@ -543,6 +593,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     { tooltipText: _('Speak'), Icon: FaHeadphones, onClick: handleSpeakText },
   ];
 
+   // Render popup components based on state
   return (
     <div>
       {showWiktionaryPopup && trianglePosition && dictPopupPosition && (

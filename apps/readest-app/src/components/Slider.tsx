@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
+// Interface for Slider component properties
 interface SliderProps {
   min?: number;
   max?: number;
@@ -17,6 +18,7 @@ interface SliderProps {
   onChange?: (value: number) => void;
 }
 
+// Slider component definition
 const Slider: React.FC<SliderProps> = ({
   min = 0,
   max = 100,
@@ -34,21 +36,26 @@ const Slider: React.FC<SliderProps> = ({
   onChange,
 }) => {
   const [value, setValue] = useState(initialValue);
-
+  // function to handle changes in the slider value
+  // This function is triggered when the slider's value changes
   const handleChange = (e: React.ChangeEvent) => {
+    // Extract the new value from the input event and convert it to an integer
     const newValue = parseInt((e.target as HTMLInputElement).value, 10);
+    // Update the state with the new value
     setValue(newValue);
+    // If there is an onChange callback provided, call it with the new value
     if (onChange) {
       onChange(newValue);
     }
   };
-
+  // useEffect hook to update the slider value when the initialValue prop changes
+  // This ensures the slider stays in sync with any external state changes
   useEffect(() => {
     setValue(initialValue);
   }, [initialValue]);
-
+  // Calculate the percentage of the current value within the min/max range
   const percentage = ((value - min) / (max - min)) * 100;
-
+  // slider container
   return (
     <div className={`slider bg-base-200 mx-auto w-full max-w-md rounded-xl ${className}`}>
       <div className='relative' style={{ height: `${heightPx}px` }}>
@@ -77,6 +84,7 @@ const Slider: React.FC<SliderProps> = ({
           </div>
         </div>
         <input
+        //the input range to change the value
           type='range'
           min={min}
           max={max}
@@ -89,5 +97,6 @@ const Slider: React.FC<SliderProps> = ({
     </div>
   );
 };
-
+ // Export the Slider component as the default export
+// This allows it to be easily imported in other parts of the application
 export default Slider;
